@@ -41,7 +41,7 @@ If you find ProteinDJ or BindSweeper useful in your research, please [cite us](h
 
 ## Installation <a name="install"></a>
 
-ProteinDJ requires that [Apptainer](https://apptainer.org/docs/admin/main/installation.html) and [Nextflow](https://www.nextflow.io/docs/latest/install.html) (≥ v24.04) are installed and accessible to the path. 
+ProteinDJ requires that [Apptainer](https://apptainer.org/docs/admin/main/installation.html) and [Nextflow](https://www.nextflow.io/docs/latest/install.html) (≥ v24.04) are installed and accessible to your environment. For v26 of Nextflow onwards, you will need to export NXF_SYNTAX_PARSER=v1 to your shell environment, as ProteinDJ does not yet follow the strict syntax enforced in recent Nextflow versions.
 
 First, clone the repo for ProteinDJ:
 
