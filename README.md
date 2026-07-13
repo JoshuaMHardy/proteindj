@@ -7,7 +7,7 @@
 ProteinDJ is a Nextflow pipeline for protein design that installs and utilises multiple external software packages, including:
 
 - AlphaFold2 Initial Guess (from https://github.com/nrbennet/dl_binder_design)
-- BindCraft (from https://github.com/martinpacesa/BindCraft)
+- BindCraft (from https://github.com/martinpacesa/BindCraft) and FreeBindCraft (https://github.com/cytokineking/FreeBindCraft)
 - BioPython (from https://biopython.org/)
 - Boltz-2 (from https://github.com/jwohlwend/boltz)
 - Full-Atom MPNN (from https://github.com/richardshuai/fampnn)
