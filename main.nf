@@ -115,14 +115,16 @@ workflow {
     println("***********************************************************************\n")
 
     // Create output directory for copy of config files used in run
-    def configDir = file("${outputDirectory}/configs")
+    def outputDir = file(outputDirectory)
+    def configDir = outputDir.resolve('configs')
     configDir.mkdirs()
     workflow.configFiles.each { configFile ->
-        configFile.copyTo("${configDir}/${configFile.getName()}")
+        def configPath = file(configFile)
+        configPath.copyTo(configDir.resolve(configPath.name))
     }
 
     // Create output directory for copy of input files used in run
-    def inputsDir = file("${outputDirectory}/inputs")
+    def inputsDir = outputDir.resolve('inputs')
     inputsDir.mkdirs()
 
     ///////////////////////
@@ -392,10 +394,10 @@ workflow {
 
         // Copy PDB and JSON files from the previous results directory to inputs directory
         previous_pdbs.each { pdbFile ->
-            pdbFile.copyTo("${inputsDir}/${pdbFile.getName()}")
+            pdbFile.copyTo(inputsDir.resolve(pdbFile.name))
         }
         previous_jsons.each { jsonFile ->
-            jsonFile.copyTo("${inputsDir}/${jsonFile.getName()}")
+            jsonFile.copyTo(inputsDir.resolve(jsonFile.name))
         }
 
         // Create channel with PDB-JSON tuples from specified directory
@@ -507,7 +509,7 @@ workflow {
 
         // Copy PDB files from the previous results directory to inputs directory
         pdbs_for_pred.each { pdbFile ->
-            pdbFile.copyTo("${inputsDir}/${pdbFile.getName()}")
+            pdbFile.copyTo(inputsDir.resolve(pdbFile.name))
         }
 
         // Create channel with PDBs from specified directory
@@ -792,7 +794,7 @@ workflow {
 
         // Copy PDB files from the previous results directory to inputs directory
         pdbs_for_analysis.each { pdbFile ->
-            pdbFile.copyTo("${inputsDir}/${pdbFile.getName()}")
+            pdbFile.copyTo(inputsDir.resolve(pdbFile.name))
         }
 
         // Create channel with PDBs from specified directory
@@ -951,7 +953,6 @@ workflow {
     // Save log file on completion
     workflow.onComplete {
         def logFile = file('.nextflow.log')
-        def outputDir = file(outputDirectory)
         if (logFile.exists()) {
             logFile.copyTo(outputDir.resolve('nextflow.log'))
         }
