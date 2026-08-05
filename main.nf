@@ -168,7 +168,7 @@ workflow {
         def engine = DesignEngine.forMode(params, is_binder_mode)
 
         // Validate input PDB file
-        if (engine.requiresInputPdb()) {
+        if (params.design_mode in ['bindcraft_denovo','boltzgen_denovo','boltzgen_redesign','rfd_motifscaff','rfd_partialdiff'] || (params.design_mode in ['rfd_denovo', 'rfd_foldcond'] && is_binder_mode)) {
             if (!params.input_pdb) {
                 throw new IllegalArgumentException("Please provide input PDB file path required by $params.design_mode mode")
             }
@@ -197,7 +197,7 @@ workflow {
             def bc_filters_json = file("${projectDir}/lib/bindcraft/settings_filters/no_filters.json")
 
             // Collect input files
-            def inputFiles = engine.collectInputFiles().collect { file(it) }
+            def inputFiles = collectInputFiles(params)
 
             // Copy input files to output directory
             inputFiles.each { inputFile ->
@@ -227,9 +227,40 @@ workflow {
 
         } else if (params.design_mode in ['boltzgen_denovo','boltzgen_redesign']) {
             // Use BoltzGen for fold design
+            validateBoltzGenParams(
+                params.design_mode,
+                params.hotspot_residues,
+                params.bg_not_binding_residues,
+                params.bg_redesign_spec,
+                params.bg_redesign_inpaint_seq,
+                params.bg_flexible_residues,
+                params.design_length,
+                params.input_pdb)
+
+            if (params.design_mode == 'boltzgen_denovo') {
+                log.info("Using BoltzGen to diffuse binders with the following design parameters:")
+                log.info("* Design length = ${params.design_length}")
+            } else {
+                log.info("Using BoltzGen to redesign an existing binder with the following design parameters:")
+            }
+            if (params.hotspot_residues){
+                log.info("* Target hotspots = ${params.hotspot_residues}")
+            }
+            if (params.bg_not_binding_residues){
+                log.info("* Target anti-hotspots = ${params.bg_not_binding_residues}")
+            }
+            if (params.design_mode == 'boltzgen_redesign' && params.bg_redesign_spec){
+                log.info("* Redesign spec = ${params.bg_redesign_spec}")
+            }
+            if (params.design_mode == 'boltzgen_redesign' && params.bg_redesign_inpaint_seq){
+                log.info("* Redesign inpaint seq = ${params.bg_redesign_inpaint_seq}")
+            }
+            if (params.bg_flexible_residues){
+                log.info("* Flexible residues = ${params.bg_flexible_residues}")
+            }
 
             // Collect input files
-            def inputFiles = engine.collectInputFiles().collect { file(it) }
+            def inputFiles = collectInputFiles(params)
 
             // Copy input files to output directory
             inputFiles.each { inputFile ->
@@ -968,13 +999,13 @@ def validateranking_metric(ranking_metric, pred_method) {
     return ranking_metric
 }
 
-// Auto-detect binder vs monomer behavior for RFdiffusion modes when fold design will actually run
-// this invocation. Uses params.input_pdb / params.rfd_contigs to determine chain count.
+// Auto-detect binder vs monomer behavior for RFdiffusion/BoltzGen modes when fold design will
+// actually run this invocation. Uses params.input_pdb / params.rfd_contigs to determine chain count.
 def detectIsBinderModeFromParams(design_mode, params) {
-    if (design_mode in ['rfd_denovo', 'rfd_foldcond']) {
+    if (design_mode in ['rfd_denovo', 'rfd_foldcond', 'boltzgen_denovo']) {
         return params.input_pdb as boolean
     }
-    // rfd_motifscaff / rfd_partialdiff always require an input PDB
+    // rfd_motifscaff / rfd_partialdiff / boltzgen_redesign always require an input PDB
     if (!params.input_pdb) {
         throw new IllegalArgumentException("input_pdb is required for '${design_mode}' mode.")
     }
@@ -1032,19 +1063,59 @@ def detectIsBinderModeFromParams(design_mode, params) {
     if (chainIds.isEmpty()) {
         throw new IllegalArgumentException("Could not determine chain(s) from input_pdb for '${design_mode}' mode.")
     }
-    return chainIds.size() >= 2
+    if (bg_flexible_residues && !bg_flexible_residues.matches(residueSpecRegex)) {
+        throw new IllegalArgumentException("bg_flexible_residues format invalid. Acceptable: 'A10-13,A16,B'.")
+    }
+    if (bg_redesign_spec) {
+        if (design_mode == 'boltzgen_denovo') {
+            throw new IllegalArgumentException("bg_redesign_spec only applies to boltzgen_redesign mode.")
+        }
+        if (!bg_redesign_spec.matches(redesignSpecRegex)) {
+            throw new IllegalArgumentException("bg_redesign_spec format invalid. Must be an ordered list of chain-A keep tokens ('A<start>-<end>') and/or bare insert-count tokens ('<n>' or '<min>-<max>'), e.g. '7-10,A1-60,5,A70-100,10'.")
+        }
+    }
+    if (bg_redesign_inpaint_seq) {
+        if (design_mode == 'boltzgen_denovo') {
+            throw new IllegalArgumentException("bg_redesign_inpaint_seq only applies to boltzgen_redesign mode.")
+        }
+        if (!bg_redesign_inpaint_seq.matches(chainASpecRegex)) {
+            throw new IllegalArgumentException("bg_redesign_inpaint_seq format invalid. Must reference chain A only, e.g. 'A10-50,A60'.")
+        }
+    }
+    if (design_mode == 'boltzgen_redesign' && !bg_redesign_spec && !bg_redesign_inpaint_seq && !bg_flexible_residues) {
+        throw new IllegalArgumentException("boltzgen_redesign mode requires at least one of bg_redesign_spec, bg_redesign_inpaint_seq, or bg_flexible_residues to be set - otherwise chain A would be left completely unchanged (wasted computation).")
+    }
 }
 
-// Auto-detect binder vs monomer behavior when fold design is being skipped this invocation.
-// Derived from the chain count of an actual resumed PDB in params.skip_input_dir, without
-// requiring/validating RFdiffusion-specific input parameters (input_pdb, rfd_contigs).
-def detectIsBinderModeFromResumedPdb(skip_input_dir) {
-    if (!skip_input_dir || !file(skip_input_dir).exists()) {
-        throw new FileNotFoundException("skip_input_dir not found at path: ${skip_input_dir}. Please ensure the path is correct.")
+def getAdvancedSettingsPath(bc_design_protocol, bc_template_protocol) {
+    // Generate the advanced settings path for BindCraft according to protocol parameters.
+    // Design protocol tag
+    def designProtocolTag
+    switch(bc_design_protocol) {
+        case "default":
+            designProtocolTag = "default_4stage_multimer"
+            break
+        case "betasheet":
+            designProtocolTag = "betasheet_4stage_multimer"
+            break
+        case "peptide":
+            designProtocolTag = "peptide_3stage_multimer"
+            break
+        default:
+            throw new IllegalArgumentException("Unsupported BindCraft design protocol: ${bc_design_protocol}")
     }
-    def pdbs = files(file(skip_input_dir).resolve('*.pdb'))
-    if (!pdbs) {
-        throw new FileNotFoundException("No PDB files found in directory: ${skip_input_dir}. Cannot auto-detect monomer/binder design mode.")
+
+    // Template protocol tag
+    def templateProtocolTag
+    switch(bc_template_protocol) {
+        case "default":
+            templateProtocolTag = ""
+            break
+        case "flexible":
+            templateProtocolTag = "_flexible"
+            break
+        default:
+            throw new IllegalArgumentException("Unsupported BindCraft template protocol: ${bc_template_protocol}")
     }
     def firstPdb = pdbs instanceof List ? pdbs[0] : pdbs
     return Utils.getPdbChainIds(firstPdb).size() >= 2
