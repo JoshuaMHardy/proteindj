@@ -17,27 +17,9 @@ Due to the creative nature of protein design and the complexity of RFdiffusion t
 - [**boltzgen_denovo**](#mode-boltzgendenovo) – generative design of new monomers/binders using BoltzGen
 - [**boltzgen_redesign**](#mode-boltzgenredesign) – redesign/rediffusion of an existing monomer/binder using BoltzGen
 
-## Preparing Target Structures for Binder Design <a name="binderdesign"></a>
+## Monomer Design <a name="monomerdesign"></a>
 
-To design binders with ProteinDJ, it is important to prepare your target structure. Ideally, your structure will be a high-resolution experimental structure or a high-confidence structural prediction. Ligands are not compatible with ProteinDJ. Non-natural amino acids in protein chains will result in an error from RFdiffusion and be replaced by alanines in BindCraft, so it is best to replace these with a suitable natural amino acid before running ProteinDJ. Since the runtime of these programs scale exponentially with target size you might want to crop the size of your target to a minimal domain. See below for an example of how to prepare a structure. You should avoid exposing hydrophobic cores of your target domain as RFdiffusion/BindCraft/BoltzGen will likely want to design a binder there (since they have a bias towards hydrophobic patches).
-
-<img src="../img/target_prep.png" width="700">
-
-If you want to test your binder designs in the context of a larger structure or complex, you can provide a separate PDB file to AlphaFold2 Initial-Guess/Boltz-2 using the `uncropped_target_pdb` parameter. This is more computationally efficient - about 6x faster than using the same larger structure as an input model for RFdiffusion/BindCraft/BoltzGen. Note that if the binder has been designed to an interface that is no longer available in the full context, this will be reflected by poor AlphaFold2/Boltz2 metrics, especially af2_rmsd_binder_tgtaln/boltz_rmsd_overall and af2_pae_interaction/boltz_ptm_interface.
-
-### Specifying Hotspot / Target Residues <a name="specifying-hotspot--target-residues"></a>
-
-`hotspot_residues` (RFdiffusion, BindCraft, BoltzGen) and BoltzGen's `bg_not_binding_residues` both share the same residue-spec grammar: a comma-separated list of tokens, where each token is a chain-qualified single residue (e.g. `A56`), a chain-qualified range (e.g. `A115-120`), or a bare chain ID meaning every residue in that chain (e.g. `B`). A chain identifier is always required, e.g. `hotspot_residues = 'A56,A115-120,B'`.
-
-## RFdiffusion Design <a name="rfddesign"></a>
-
-Each of the four RFdiffusion modes (`rfd_denovo`, `rfd_foldcond`, `rfd_motifscaff`, `rfd_partialdiff`) automatically runs as **monomer design** or **binder design** depending on whether a target `input_pdb` is provided (and, where relevant, whether `rfd_contigs`/the input PDB describe a single chain or multiple chains). You do not need to select monomer vs. binder explicitly - ProteinDJ detects this automatically at runtime.
-
-Contigs for binder design are more complicated than monomer design because we need to give information about the target and binder chains. Here are some examples to illustrate the specification of binder length. Your contigs must only include target residues that exist i.e. if you have missing loops or residues in your target you need to exclude them from the contig ranges. To make this easier, we have implemented automatic generation of contigs that will include all residues from the target and append the 'design_length', if relevant. To enable automatic generation of contigs, set `rfd_contigs` to null.
-
-<img src="../img/contigs.png" width="700">
-
-### RFdiffusion De Novo Mode (rfd_denovo) <a name="mode-rfddenovo"></a>
+### Monomer De Novo Mode (monomer_denovo) <a name="mode-monomerdenovo"></a>
 
 The simplest use of RFdiffusion is to generate a monomeric protein from noise, or a binder against a target protein.
 
@@ -87,7 +69,7 @@ rfd_denovo_binder {
 }
 ```
 
-Alternatively, you can use contigs to specify residues to include and the design length e.g. `rfd_contigs = "[A17-131/0 60-100]"` will give the same result as above i.e. use the residues 17-131 from chain A and diffuse binders of variable length between 60-100 residues. Note the '/0' after the chain A residues that tells RFdiffusion to insert a new chain for the following residue range (the binder). We can also specify three hotspot residues to guide binder positioning (`hotspot_residues = "A56,A115,A123"`). Hotspot residues can also include ranges (e.g. `A115-120`) and whole chains (e.g. `B`).
+Alternatively, you can use contigs to specify residues to include and the design length e.g. `rfd_contigs = "[A17-131/0 60-100]"` will give the same result as above i.e.  use the residues 17-131 from chain A and diffuse binders of variable length between 60-100 residues. Note the '/0' after the chain A residues that tells RFdiffusion to insert a new chain for the following residue range (the binder). We can also specify three hotspot residues to guide binder positioning (`hotspot_residues = "A56,A115,A123"`).
 
 ```
 rfd_denovo_binder {
@@ -430,7 +412,7 @@ For more details on BindCraft, see the official BindCraft [GitHub](https://githu
 
 ## BoltzGen Design <a name="boltzgendesign"></a>
 
-[BoltzGen](https://github.com/HannesStark/boltzgen) is an all-atom generative model that can design a new monomer or binder (`boltzgen_denovo`), or redesign/rediffuse part of an existing monomer or binder (`boltzgen_redesign`). Like BindCraft, BoltzGen's design step produces both backbone and an initial sequence together, which ProteinDJ passes through sequence design, structure prediction, and analysis stages. As with RFdiffusion, both modes automatically run as **monomer design** or **binder design** depending on whether a target `input_pdb` is provided (for `boltzgen_redesign`, monomer vs. binder is instead determined by whether `input_pdb` contains only chain A or additional target chain(s)) - you do not need to select monomer vs. binder explicitly.
+[BoltzGen](https://github.com/HannesStark/boltzgen) is an all-atom generative model that can design binders directly against a target structure (`boltzgen_denovo`), or redesign/rediffuse part of an existing binder (`boltzgen_redesign`). Unlike RFdiffusion/BindCraft, BoltzGen's design step does not require separate sequence design or structure prediction outputs to be treated as a proposal - it produces both backbone and an initial sequence together, which ProteinDJ still passes through its usual sequence design, structure prediction, and analysis stages for consistency with the other modes.
 
 ### BoltzGen De Novo Mode (boltzgen_denovo) <a name="mode-boltzgendenovo"></a>
 

@@ -968,6 +968,47 @@ def validateranking_metric(ranking_metric, pred_method) {
     return ranking_metric
 }
 
+// Auto-detect binder vs monomer behavior for RFdiffusion modes when fold design will actually run
+// this invocation. Uses params.input_pdb / params.rfd_contigs to determine chain count.
+def detectIsBinderModeFromParams(design_mode, params) {
+    if (design_mode in ['rfd_denovo', 'rfd_foldcond']) {
+        return params.input_pdb as boolean
+    }
+    // rfd_motifscaff / rfd_partialdiff always require an input PDB
+    if (!params.input_pdb) {
+        throw new IllegalArgumentException("input_pdb is required for '${design_mode}' mode.")
+    }
+    def inputFile = file(params.input_pdb)
+    if (!inputFile.exists()) {
+        throw new FileNotFoundException("Input PDB file not found at path: ${params.input_pdb}. Please ensure the file exists and the path is correct.")
+    }
+    if (params.rfd_contigs) {
+        // Chain-break token count is robust to newly-diffused chains that have no chain letter
+        // (e.g. partial diffusion / denovo binder chains)
+        return Utils.countContigChains(params.rfd_contigs) >= 2
+    }
+    Set chainIds = Utils.getPdbChainIds(inputFile)
+    if (chainIds.isEmpty()) {
+        throw new IllegalArgumentException("Could not determine chain(s) from input_pdb for '${design_mode}' mode.")
+    }
+    return chainIds.size() >= 2
+}
+
+// Auto-detect binder vs monomer behavior when fold design is being skipped this invocation.
+// Derived from the chain count of an actual resumed PDB in params.skip_input_dir, without
+// requiring/validating RFdiffusion-specific input parameters (input_pdb, rfd_contigs).
+def detectIsBinderModeFromResumedPdb(skip_input_dir) {
+    if (!skip_input_dir || !file(skip_input_dir).exists()) {
+        throw new FileNotFoundException("skip_input_dir not found at path: ${skip_input_dir}. Please ensure the path is correct.")
+    }
+    def pdbs = files(file(skip_input_dir).resolve('*.pdb'))
+    if (!pdbs) {
+        throw new FileNotFoundException("No PDB files found in directory: ${skip_input_dir}. Cannot auto-detect monomer/binder design mode.")
+    }
+    def firstPdb = pdbs instanceof List ? pdbs[0] : pdbs
+    return Utils.getPdbChainIds(firstPdb).size() >= 2
+}
+
 // Auto-detect binder vs monomer behavior for RFdiffusion/BoltzGen modes when fold design will
 // actually run this invocation. Uses params.input_pdb / params.rfd_contigs to determine chain count.
 def detectIsBinderModeFromParams(design_mode, params) {
