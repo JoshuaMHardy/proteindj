@@ -294,7 +294,7 @@ nextflow_function {
             function {
                 """
                 input[0] = "[A1-88/0]"
-                """
+                """ 
             }
         }
         then {
