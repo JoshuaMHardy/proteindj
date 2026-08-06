@@ -4,6 +4,8 @@ public class RFDiffusionParams extends HashMap<String, Object> {
     static final String RFD_SCRIPT_PATH = "/app/RFdiffusion/scripts/run_inference.py"
 
     // Sentinel passed as the contigs channel value for rfd_motifscaff when contigs should be
+
+    // Sentinel passed as the contigs channel value for rfd_motifscaff when contigs should be
     // auto-generated from motifscaff_spec/motifscaff_inpaint_seq/flexible_residues (rather than a real
     // pre-computed contig string), since RFDiffusionParams has direct access to input_pdb/params
     // and can resolve them itself at command-generation time - mirrors 'NoContigsNeededForFoldConditioning'.
@@ -161,6 +163,23 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         }
         return "[${([chainASegment] + targetSegments).join('/0 ')}]"
     }
+    // Auto-generate an rfd_partialdiff contigmap.contigs string from rfd_partialdiff_spec (same
+    // keep/diffuse grammar as motifscaff_spec, but diffuse tokens are fixed counts only since partial
+    // diffusion cannot change chain A's length) plus the input PDB's chains. Target chain(s), in binder
+    // mode, are auto-detected and appended with full-range notation joined by '/0', exactly as
+    // resolveMotifScaffContigs does.
+    private String resolvePartialDiffContigs() {
+        def pdbFile = new File(this.input_pdb.toString())
+        def designChain = this.is_binder_mode ? 'A' : Utils.getPdbChainIds(pdbFile).sort().first()
+        def chainASegment = this.rfd_partialdiff_spec.replace(',', ' ')
+        if (!this.is_binder_mode) {
+            return "[${chainASegment}]"
+        }
+        def targetSegments = Utils.getPdbChainIds(pdbFile).findAll { it != designChain }.sort().collect { chain ->
+            formatChainRanges(pdbFile, chain)
+        }
+        return "[${([chainASegment] + targetSegments).join('/0 ')}]"
+    }
 
     // Translate a motifscaff_inpaint_seq/flexible_residues comma-token list (RESIDUE_SPEC_REGEX or
     // DESIGN_CHAIN_SPEC_REGEX grammar) into RFdiffusion's bracket/slash contigmap.inpaint_seq /
@@ -226,6 +245,52 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         }
         return ranges.join(',')
     }
+    // Translate a chain-qualified residue-spec string (rfd_partialdiff_fixed_seq) into RFdiffusion's
+    // flat 0-indexed contigmap.provide_seq ranges. Only valid for the design chain (chain A in
+    // binder mode, the sole chain in monomer mode), since that chain is always the first/bare-digit
+    // segment of a partial-diffusion contig by ProteinDJ convention - its rank within the chain's own
+    // sorted residue numbers therefore equals its flat 0-based position in the assembled structure.
+    private String resolveProvideSeq(String fixedSeqSpec) {
+        def pdbFile = new File(this.input_pdb.toString())
+        def designChain = this.is_binder_mode ? 'A' : Utils.getPdbChainIds(pdbFile).sort().first()
+        def flatIndices = [] as SortedSet
+        fixedSeqSpec.split(',').each { token ->
+            def matcher = (token =~ /^([A-Za-z]+)(\d+)?(?:-(\d+))?$/)
+            matcher.matches()
+            def (chain, start, end) = [matcher.group(1), matcher.group(2), matcher.group(3)]
+            if (chain != designChain) {
+                throw new IllegalArgumentException("rfd_partialdiff_fixed_seq token '${token}' must reference the design chain ('${designChain}') only.")
+            }
+            def chainResNums = Utils.getPdbChainResidueNumbers(pdbFile, chain)
+            def targetNums = !start ? chainResNums : (end ? (start.toInteger()..end.toInteger()) : [start.toInteger()])
+            targetNums.each { resNum ->
+                def rank = chainResNums.indexOf(resNum)
+                if (rank == -1) {
+                    throw new IllegalArgumentException("rfd_partialdiff_fixed_seq residue ${chain}${resNum} not found in input_pdb chain ${chain}.")
+                }
+                flatIndices << rank
+            }
+        }
+        def ranges = []
+        def rangeStart = null
+        def rangeEnd = null
+        flatIndices.each { idx ->
+            if (rangeStart == null) {
+                rangeStart = idx
+                rangeEnd = idx
+            } else if (idx == rangeEnd + 1) {
+                rangeEnd = idx
+            } else {
+                ranges << "${rangeStart}-${rangeEnd}".toString()
+                rangeStart = idx
+                rangeEnd = idx
+            }
+        }
+        if (rangeStart != null) {
+            ranges << "${rangeStart}-${rangeEnd}".toString()
+        }
+        return ranges.join(',')
+    }
 
     private void addCommonParameters(List<String> cmd) {
         cmd << "inference.write_trajectory=False"
@@ -235,6 +300,8 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         boolean isBinder = this.is_binder_mode
 
         // Contigs apply to every variant except foldcond (which uses scaffoldguided.* instead)
+        if (variant != 'foldcond' && this.resolvedContigs) {
+            cmd << "\'contigmap.contigs=${this.resolvedContigs}\'"
         if (variant != 'foldcond' && this.resolvedContigs) {
             cmd << "\'contigmap.contigs=${this.resolvedContigs}\'"
         }
@@ -280,9 +347,13 @@ public class RFDiffusionParams extends HashMap<String, Object> {
             // Validate hotspots against the auto-generated contigs before adding to command
             if (this.resolvedContigs) {
                 validateHotspots(this.resolvedContigs, expandedHotspots)
+            // Validate hotspots against the auto-generated contigs before adding to command
+            if (this.resolvedContigs) {
+                validateHotspots(this.resolvedContigs, expandedHotspots)
             }
             cmd << "\'ppi.hotspot_res=[${expandedHotspots}]\'"
         }
+        def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         if (inpaintStr) {
             cmd << "contigmap.inpaint_str=${inpaintStr}"
@@ -294,6 +365,7 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         cmd << "scaffoldguided.target_pdb=True"
 
         // scaffoldguided.mask_loops defaults to True. Override if false.
+        if (this.rfd_foldcond_mask_loops == false) {
         if (this.rfd_foldcond_mask_loops == false) {
             cmd << "scaffoldguided.mask_loops=False"
         }
@@ -307,12 +379,15 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         // For scaffolds_dir, use a relative path
         if (this.rfd_foldcond_scaffold_dir) {
             cmd << "scaffoldguided.scaffold_dir=${getSimpleFileName(this.rfd_foldcond_scaffold_dir)}"
+        if (this.rfd_foldcond_scaffold_dir) {
+            cmd << "scaffoldguided.scaffold_dir=${getSimpleFileName(this.rfd_foldcond_scaffold_dir)}"
         }
         
         // Add hotspots for rfd_foldcond binder mode
         if (this.hotspot_residues) {
             cmd << "\'ppi.hotspot_res=[${expandHotspots(this.hotspot_residues)}]\'"
         }
+        def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         if (inpaintStr) {
             cmd << "contigmap.inpaint_str=${inpaintStr}"
@@ -330,11 +405,13 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         if (inpaintStr) {
             cmd << "contigmap.inpaint_str=${inpaintStr}"
+            cmd << "contigmap.inpaint_str=${inpaintStr}"
         }
     }
 
     private void addBinderPartialDiffusionParameters(List<String> cmd) {
         cmd << "diffuser.partial_T=${this.rfd_partialdiff_timesteps}"
+        if (this.rfd_partialdiff_fixed_seq) {
         if (this.rfd_partialdiff_fixed_seq) {
             cmd << "\'contigmap.provide_seq=[${resolveProvideSeq(this.rfd_partialdiff_fixed_seq)}]\'"
         }
@@ -357,10 +434,13 @@ public class RFDiffusionParams extends HashMap<String, Object> {
 
         // scaffoldguided.mask_loops defaults to True. Override if false.
         if (this.rfd_foldcond_mask_loops == false) {
+        if (this.rfd_foldcond_mask_loops == false) {
             cmd << "scaffoldguided.mask_loops=False"
         }
 
         // For scaffolds_dir, use a relative path
+        if (this.rfd_foldcond_scaffold_dir) {
+            cmd << "scaffoldguided.scaffold_dir=${getSimpleFileName(this.rfd_foldcond_scaffold_dir)}"
         if (this.rfd_foldcond_scaffold_dir) {
             cmd << "scaffoldguided.scaffold_dir=${getSimpleFileName(this.rfd_foldcond_scaffold_dir)}"
         }
@@ -374,6 +454,7 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         }
         def inpaintStr = resolveInpaintBracket(this.flexible_residues)
         if (inpaintStr) {
+            cmd << "contigmap.inpaint_str=${inpaintStr}"
             cmd << "contigmap.inpaint_str=${inpaintStr}"
         }
         if (this.rfd_motifscaff_length) {
@@ -390,10 +471,32 @@ public class RFDiffusionParams extends HashMap<String, Object> {
         if (inpaintStr) {
             cmd << "contigmap.inpaint_str=${inpaintStr}"
         }
+        cmd << "diffuser.partial_T=${this.rfd_partialdiff_timesteps}"
+        if (this.rfd_partialdiff_fixed_seq) {
+            cmd << "\'contigmap.provide_seq=[${resolveProvideSeq(this.rfd_partialdiff_fixed_seq)}]\'"
+        }
+        def inpaintStr = resolveInpaintBracket(this.flexible_residues)
+        if (inpaintStr) {
+            cmd << "contigmap.inpaint_str=${inpaintStr}"
+        }
     }
 
 
     String generateCommandString(String contigsOverride = null) {
+        // Contigs are always supplied by main.nf's channel wiring: either a concrete contig
+        // string (rfd_denovo monomer/foldcond) or an auto-generation sentinel resolved below.
+        def effectiveContigs = contigsOverride
+
+        // Auto-generate rfd_motifscaff contigs from motifscaff_spec/target-chain detection when the
+        // contigs channel carries the auto-generation sentinel instead of a real contig string.
+        if (effectiveContigs == AUTO_CONTIGS_SENTINEL) {
+            effectiveContigs = resolveMotifScaffContigs()
+        } else if (effectiveContigs == AUTO_PARTIALDIFF_SENTINEL) {
+            effectiveContigs = resolvePartialDiffContigs()
+        }
+
+        // Store the resolved contigs for use by addCommonParameters/addBinderDenovoParameters
+        this.resolvedContigs = effectiveContigs
         // Contigs are always supplied by main.nf's channel wiring: either a concrete contig
         // string (rfd_denovo monomer/foldcond) or an auto-generation sentinel resolved below.
         def effectiveContigs = contigsOverride

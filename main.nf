@@ -263,9 +263,21 @@ workflow {
 
         } else { // Use RFdiffusion for fold design
             // Check which contigs auto-generation strategy applies for this mode
+            // Check which contigs auto-generation strategy applies for this mode
             if (params.design_mode == 'rfd_foldcond'){
                Channel.value('NoContigsNeededForFoldConditioning').set{rfdContigs}
             } else if (params.design_mode == 'rfd_motifscaff'){
+                // Auto-generate contigs from motifscaff_spec/target-chain detection, resolved in
+                // Groovy by RFDiffusionParams at command-generation time (no PDB parsing here).
+                // engine.validateParams() has already confirmed at least one of motifscaff_spec/
+                // motifscaff_inpaint_seq/flexible_residues is set.
+                println("Automatically generating RFdiffusion contigs from motifscaff_spec/motifscaff_inpaint_seq/flexible_residues.")
+                Channel.value(RFDiffusionParams.AUTO_CONTIGS_SENTINEL).set{rfdContigs}
+            } else if (params.design_mode == 'rfd_partialdiff' && params.rfd_partialdiff_spec){
+                // Auto-generate contigs from rfd_partialdiff_spec/target-chain detection, resolved in
+                // Groovy by RFDiffusionParams at command-generation time (no PDB parsing here).
+                println("Automatically generating RFdiffusion contigs from rfd_partialdiff_spec.")
+                Channel.value(RFDiffusionParams.AUTO_PARTIALDIFF_SENTINEL).set{rfdContigs}
                 // Auto-generate contigs from motifscaff_spec/target-chain detection, resolved in
                 // Groovy by RFDiffusionParams at command-generation time (no PDB parsing here).
                 // engine.validateParams() has already confirmed at least one of motifscaff_spec/
@@ -281,6 +293,7 @@ workflow {
                 // Contigs for monomer rfd_denovo are equivalent to design_length
                 Channel.value("[$params.design_length]").set{rfdContigs}
             } else {
+                // Auto-generate contigs for RFdiffusion if not provided (rfd_denovo binder, or rfd_partialdiff monomer/binder without rfd_partialdiff_spec)
                 // Auto-generate contigs for RFdiffusion if not provided (rfd_denovo binder, or rfd_partialdiff monomer/binder without rfd_partialdiff_spec)
                 println("Automatically generating RFdiffusion contigs from input PDB. Will include all residues.")
                 GenerateRFDContigs(file(params.input_pdb), params.design_mode, is_binder_mode)
@@ -995,54 +1008,13 @@ def validateranking_metric(ranking_metric, pred_method) {
     return ranking_metric
 }
 
-// Auto-detect binder vs monomer behavior for RFdiffusion modes when fold design will actually run
-// this invocation. Uses params.input_pdb / params.rfd_contigs to determine chain count.
+// Auto-detect binder vs monomer behavior for RFdiffusion/BoltzGen modes when fold design will
+// actually run this invocation. Uses params.input_pdb to determine chain count.
 def detectIsBinderModeFromParams(design_mode, params) {
     if (design_mode in ['rfd_denovo', 'rfd_foldcond']) {
         return params.input_pdb as boolean
     }
     // rfd_motifscaff / rfd_partialdiff always require an input PDB
-    if (!params.input_pdb) {
-        throw new IllegalArgumentException("input_pdb is required for '${design_mode}' mode.")
-    }
-    def inputFile = file(params.input_pdb)
-    if (!inputFile.exists()) {
-        throw new FileNotFoundException("Input PDB file not found at path: ${params.input_pdb}. Please ensure the file exists and the path is correct.")
-    }
-    if (params.rfd_contigs) {
-        // Chain-break token count is robust to newly-diffused chains that have no chain letter
-        // (e.g. partial diffusion / denovo binder chains)
-        return Utils.countContigChains(params.rfd_contigs) >= 2
-    }
-    Set chainIds = Utils.getPdbChainIds(inputFile)
-    if (chainIds.isEmpty()) {
-        throw new IllegalArgumentException("Could not determine chain(s) from input_pdb for '${design_mode}' mode.")
-    }
-    return chainIds.size() >= 2
-}
-
-// Auto-detect binder vs monomer behavior when fold design is being skipped this invocation.
-// Derived from the chain count of an actual resumed PDB in params.skip_input_dir, without
-// requiring/validating RFdiffusion-specific input parameters (input_pdb, rfd_contigs).
-def detectIsBinderModeFromResumedPdb(skip_input_dir) {
-    if (!skip_input_dir || !file(skip_input_dir).exists()) {
-        throw new FileNotFoundException("skip_input_dir not found at path: ${skip_input_dir}. Please ensure the path is correct.")
-    }
-    def pdbs = files(file(skip_input_dir).resolve('*.pdb'))
-    if (!pdbs) {
-        throw new FileNotFoundException("No PDB files found in directory: ${skip_input_dir}. Cannot auto-detect monomer/binder design mode.")
-    }
-    def firstPdb = pdbs instanceof List ? pdbs[0] : pdbs
-    return Utils.getPdbChainIds(firstPdb).size() >= 2
-}
-
-// Auto-detect binder vs monomer behavior for RFdiffusion/BoltzGen modes when fold design will
-// actually run this invocation. Uses params.input_pdb to determine chain count.
-def detectIsBinderModeFromParams(design_mode, params) {
-    if (design_mode in ['rfd_denovo', 'rfd_foldcond', 'boltzgen_denovo']) {
-        return params.input_pdb as boolean
-    }
-    // rfd_motifscaff / rfd_partialdiff / boltzgen_motifscaff always require an input PDB
     if (!params.input_pdb) {
         throw new IllegalArgumentException("input_pdb is required for '${design_mode}' mode.")
     }
