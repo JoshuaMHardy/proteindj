@@ -13,6 +13,16 @@ public class RFDiffusionParams extends HashMap<String, Object> {
     // auto-generated from rfd_partialdiff_spec (rather than a real pre-computed contig string).
     static final String AUTO_PARTIALDIFF_SENTINEL = 'AutoGenerateFromPartialDiffSpec'
     
+// Sentinel passed as the contigs channel value for rfd_motifscaff when contigs should be
+    // auto-generated from motifscaff_spec/motifscaff_inpaint_seq/flexible_residues (rather than a real
+    // pre-computed contig string), since RFDiffusionParams has direct access to input_pdb/params
+    // and can resolve them itself at command-generation time - mirrors 'NoContigsNeededForFoldConditioning'.
+    static final String AUTO_CONTIGS_SENTINEL = 'AutoGenerateFromMotifScaffSpec'
+
+    // Sentinel passed as the contigs channel value for rfd_partialdiff when contigs should be
+    // auto-generated from rfd_partialdiff_spec (rather than a real pre-computed contig string).
+    static final String AUTO_PARTIALDIFF_SENTINEL = 'AutoGenerateFromPartialDiffSpec'
+    
     static final String MODEL_BASE_PATH = "/app/RFdiffusion/models/"
     static final Map<String, String> MODEL_NAMES = [
         'base': 'Base',
