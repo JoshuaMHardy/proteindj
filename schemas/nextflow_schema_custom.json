@@ -282,40 +282,6 @@
       "description": "Advanced parameters to control the behaviour of RFdiffusion.",
       "default": "",
       "properties": {
-        "rfd_contigs": {
-          "type": "string",
-          "description": "Contigs specification strings for residues to include from input PDB and/or design length, e.g. `[A17-145/0 50-100]`. See docs for examples. Optional for multiple modes, required by `rfd_motifscaff`. If null, contigs will be auto generated from input PDB (all residues) and/or `design_length`.",
-          "pattern": "^\\[[A-Z0-9\\-\\/ \\[\\]]+\\]$",
-          "default": null
-        },
-        "rfd_scaffold_dir": {
-          "type": "string",
-          "format": "directory-path",
-          "description": "Path to directory containing scaffold files. e.g. 'binderscaffolds/scaffolds_assorted'",
-          "default": null
-        },
-        "rfd_mask_loops": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whether to ignore loop regions when applying secondary structure constraints from scaffolds (default=true). Recommended to set to false for binder design as the scaffold sets have enough diversity"
-        },
-        "rfd_inpaint_seq": {
-          "type": "string",
-          "description": "Residues that will have their sequence masked when diffusing. e.g. '[A17-19/A143-145]'",
-          "pattern": "^\\[([A-Z]?\\d+(?:-\\d+)?(?:\\/\\d+)?)(?:\\/([A-Z]?\\d+(?:-\\d+)?(?:\\/\\d+)?))*\\]$",
-          "default": null
-        },
-        "rfd_length": {
-          "type": "string",
-          "description": "Length of diffused chain when performing motif scaffolding e.g. 100-120",
-          "pattern": "^\\d+-\\d+$",
-          "default": null
-        },
-        "rfd_partial_diffusion_timesteps": {
-          "type": "integer",
-          "description": "Number of timesteps for partial diffusion. e.g. 20",
-          "default": "null"
-        },
         "rfd_ckpt_override": {
           "type": "string",
           "description": "Override the diffusion model checkpoint used by RFdiffusion. Choose from: 'active_site', 'base', 'base_epoch8', 'complex_base', 'complex_beta', 'complex_fold_base', 'inpaint_seq', 'inpaint_seq_fold'. RFdiffusion will automatically select a checkpoint. Not recommended to override except for 'rfd_denovo' binder mode i.e. 'complex_beta'. 'rfd_motifscaff' binder mode already defaults to 'complex_base' internally unless 'motifscaff_inpaint_seq'/'flexible_residues' is set.",
