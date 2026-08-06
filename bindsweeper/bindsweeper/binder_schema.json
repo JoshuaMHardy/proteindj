@@ -129,6 +129,14 @@
       ],
       "description": "Path to input files when skipping stages e.g. './rfd_results'"
     },
+    "rfd_contigs": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Contigs specification strings for residues to include from input PDB and/or design length, e.g. `[A17-145/0 50-100]`. See docs for examples. Optional for multiple modes, required by `rfd_motifscaff`. If null, contigs will be auto generated from input PDB (all residues) and/or `design_length`.",
+      "pattern": "^\\[[A-Z0-9\\-\\/ \\[\\]]+\\]$"
+    },
     "rfd_ckpt_override": {
       "type": [
         "string",
@@ -1080,6 +1088,19 @@
         "null"
       ],
       "description": "Path to input files when skipping stages e.g. './rfd_results'"
+    },
+    "rfd_scaffold_dir": {
+      "type": "string",
+      "description": "Path to directory containing scaffold files. e.g. 'binderscaffolds/scaffolds_assorted'",
+      "example": "${projectDir}/binderscaffolds/scaffolds_assorted"
+    },
+    "rfd_mask_loops": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Whether to ignore loop regions when applying secondary structure constraints from scaffolds (default=true). Recommended to set to false for binder design as the scaffold sets have enough diversity",
+      "example": false
     },
     "rfd_ckpt_override": {
       "type": [
@@ -2033,6 +2054,30 @@
       ],
       "description": "Path to input files when skipping stages e.g. './rfd_results'"
     },
+    "rfd_contigs": {
+      "type": "string",
+      "description": "Contigs specification strings for residues to include from input PDB and/or design length, e.g. `[A17-145/0 50-100]`. See docs for examples. Optional for multiple modes, required by `rfd_motifscaff`. If null, contigs will be auto generated from input PDB (all residues) and/or `design_length`.",
+      "pattern": "^\\[[A-Z0-9\\-\\/ \\[\\]]+\\]$",
+      "example": "[5-10/A1-88/10-20/0 B89-203]"
+    },
+    "rfd_inpaint_seq": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Residues that will have their sequence masked when diffusing. e.g. '[A17-19/A143-145]'",
+      "pattern": "^\\[([A-Z]?\\d+(?:-\\d+)?(?:\\/\\d+)?)(?:\\/([A-Z]?\\d+(?:-\\d+)?(?:\\/\\d+)?))*\\]$",
+      "example": "[A17-19/A129-131]"
+    },
+    "rfd_length": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Length of diffused chain when performing motif scaffolding e.g. 100-120",
+      "pattern": "^\\d+-\\d+$",
+      "example": "110-110"
+    },
     "rfd_ckpt_override": {
       "type": [
         "string",
@@ -2983,6 +3028,19 @@
         "null"
       ],
       "description": "Path to input files when skipping stages e.g. './rfd_results'"
+    },
+    "rfd_contigs": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Contigs specification strings for residues to include from input PDB and/or design length, e.g. `[A17-145/0 50-100]`. See docs for examples. Optional for multiple modes, required by `rfd_motifscaff`. If null, contigs will be auto generated from input PDB (all residues) and/or `design_length`.",
+      "pattern": "^\\[[A-Z0-9\\-\\/ \\[\\]]+\\]$"
+    },
+    "rfd_partial_diffusion_timesteps": {
+      "type": "integer",
+      "description": "Number of timesteps for partial diffusion. e.g. 20",
+      "example": 20
     },
     "rfd_ckpt_override": {
       "type": [

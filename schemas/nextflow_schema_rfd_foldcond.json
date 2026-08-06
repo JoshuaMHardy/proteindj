@@ -167,6 +167,17 @@
       "description": "Advanced parameters to control the behaviour of RFdiffusion.",
       "default": "",
       "properties": {
+        "rfd_scaffold_dir": {
+          "type": "string",
+          "format": "directory-path",
+          "description": "Path to directory containing scaffold files. e.g. 'binderscaffolds/scaffolds_assorted'",
+          "default": "${projectDir}/binderscaffolds/scaffolds_assorted"
+        },
+        "rfd_mask_loops": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to ignore loop regions when applying secondary structure constraints from scaffolds (default=true). Recommended to set to false for binder design as the scaffold sets have enough diversity"
+        },
         "rfd_ckpt_override": {
           "type": "string",
           "description": "Override the diffusion model checkpoint used by RFdiffusion. Choose from: 'active_site', 'base', 'base_epoch8', 'complex_base', 'complex_beta', 'complex_fold_base', 'inpaint_seq', 'inpaint_seq_fold'. RFdiffusion will automatically select a checkpoint. Not recommended to override except for 'rfd_denovo' binder mode i.e. 'complex_beta'. 'rfd_motifscaff' binder mode already defaults to 'complex_base' internally unless 'motifscaff_inpaint_seq'/'flexible_residues' is set.",
@@ -194,7 +205,10 @@
           "description": "Additional configuration parameters to pass to RFdiffusion. e.g. 'contigmap.inpaint_str=[B165-178]'",
           "hidden": true
         }
-      }
+      },
+      "required": [
+        "rfd_scaffold_dir"
+      ]
     },
     "proteinmpnn_fastrelax_parameters": {
       "title": "ProteinMPNN-FastRelax Parameters",
