@@ -4,7 +4,6 @@ design_mode,,design_mode,rfd_denovo,design_mode,rfd_foldcond,design_mode,rfd_mot
 num_designs,8,num_designs,8,num_designs,,num_designs,,num_designs,,num_designs,,num_designs,,num_designs,
 seqs_per_design,8,seqs_per_design,8,seqs_per_design,,seqs_per_design,,seqs_per_design,,seqs_per_design,,seqs_per_design,,seqs_per_design,
 out_dir,${projectDir}/pdj_results,out_dir,${projectDir}/pdj_rfd_denovo,out_dir,${projectDir}/pdj_rfd_foldcond,out_dir,${projectDir}/pdj_rfd_motifscaff,out_dir,${projectDir}/pdj_rfd_partialdiff,out_dir,${projectDir}/pdj_bindcraft_denovo,out_dir,${projectDir}/pdj_boltzgen_denovo,out_dir,${projectDir}/pdj_boltzgen_motifscaff
-out_dir,${projectDir}/pdj_results,out_dir,${projectDir}/pdj_rfd_denovo,out_dir,${projectDir}/pdj_rfd_foldcond,out_dir,${projectDir}/pdj_rfd_motifscaff,out_dir,${projectDir}/pdj_rfd_partialdiff,out_dir,${projectDir}/pdj_bindcraft_denovo,out_dir,${projectDir}/pdj_boltzgen_denovo,out_dir,${projectDir}/pdj_boltzgen_motifscaff
 design_length,null,design_length,60-80,,,,,,,design_length,60-100,design_length,60-100,,
 input_pdb,null,input_pdb,${projectDir}/benchmarkdata/5o45_pd-l1.pdb,input_pdb,${projectDir}/benchmarkdata/5o45_pd-l1.pdb,input_pdb,${projectDir}/lib/examplebinder.pdb,input_pdb,${projectDir}/lib/examplebinder.pdb,input_pdb,${projectDir}/benchmarkdata/5o45_pd-l1.pdb,input_pdb,${projectDir}/benchmarkdata/5o45_pd-l1.pdb,input_pdb,${projectDir}/lib/examplebinder.pdb
 hotspot_residues,null,hotspot_residues,"A56,A115,A123",hotspot_residues,"A56,A115,A123",,,,,hotspot_residues,,hotspot_residues,,,
@@ -54,7 +53,6 @@ mpnn_extra_config,null,mpnn_extra_config,,mpnn_extra_config,,mpnn_extra_config,,
 fampnn_fix_target_sidechains,FALSE,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,,fampnn_fix_target_sidechains,
 fampnn_psce_threshold,0.3,fampnn_psce_threshold,,fampnn_psce_threshold,,fampnn_psce_threshold,,fampnn_psce_threshold,,fampnn_psce_threshold,,fampnn_psce_threshold,,fampnn_psce_threshold,
 fampnn_temperature,0.1,fampnn_temperature,,fampnn_temperature,,fampnn_temperature,,fampnn_temperature,,fampnn_temperature,,fampnn_temperature,,fampnn_temperature,
-fampnn_max_psce,10,fampnn_max_psce,,fampnn_max_psce,,fampnn_max_psce,,fampnn_max_psce,,fampnn_max_psce,,fampnn_max_psce,,fampnn_max_psce,
 fampnn_exclude_cys,TRUE,fampnn_exclude_cys,,fampnn_exclude_cys,,fampnn_exclude_cys,,fampnn_exclude_cys,,fampnn_exclude_cys,,fampnn_exclude_cys,,fampnn_exclude_cys,
 fampnn_extra_config,null,fampnn_extra_config,,fampnn_extra_config,,fampnn_extra_config,,fampnn_extra_config,,fampnn_extra_config,,fampnn_extra_config,,fampnn_extra_config,
 uncropped_target_pdb,null,uncropped_target_pdb,,uncropped_target_pdb,,uncropped_target_pdb,,uncropped_target_pdb,,uncropped_target_pdb,,uncropped_target_pdb,,uncropped_target_pdb,
