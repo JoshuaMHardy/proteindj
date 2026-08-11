@@ -79,6 +79,7 @@ class MetadataConverter:
             'boltz_pde', 'boltz_ipde',
             'boltz_plddt', 'boltz_iplddt',
             'boltz_ptm', 'boltz_iptm','boltz_ptm_binder','boltz_ptm_target',
+            'boltz_unbound_rmsd', 'boltz_unbound_conf_score', 'boltz_unbound_ptm', 'boltz_unbound_plddt', 'boltz_unbound_pde',
             # Prediction Analysis fields
             'pr_helices','pr_strands', 'pr_total_ss','pr_RoG',
             'pr_intface_BSA','pr_intface_shpcomp',

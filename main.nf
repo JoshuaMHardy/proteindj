@@ -10,12 +10,14 @@ include { AlignAF2; FilterAF2; RunAF2 } from './modules/af2.nf'
 include { AnalysePredictions; FilterAnalysis } from './modules/analysis.nf'
 include { PublishResults } from './modules/publish.nf'
 include { AlignBoltz ; FilterBoltz; PrepBoltz ; RunBoltz; AnalyseBoltz } from './modules/boltz.nf'
+include { PrepBoltz as PrepBoltzUnbound ; RunBoltz as RunBoltzUnbound ; AlignBoltz as AlignBoltzUnbound } from './modules/boltz.nf'
 include { CombineMetadata } from './modules/combine_metadata.nf'
 include { Compress as CompressRFD } from './modules/compress'
 include { Compress as CompressMPNN } from './modules/compress'
 include { Compress as CompressFAMPNN } from './modules/compress'
 include { Compress as CompressAF2 } from './modules/compress'
 include { Compress as CompressBoltz } from './modules/compress'
+include { Compress as CompressBoltzUnbound } from './modules/compress'
 include { Compress as CompressBC } from './modules/compress'
 include { Compress as CompressBG } from './modules/compress'
 include { MergeUncroppedTarget } from './modules/merge_uncropped_target.nf'
@@ -113,7 +115,7 @@ workflow {
     def seq_max_score_param = seq_max_score != null ? "--max-score ${seq_max_score}" : ''
     def seq_filter_params = Utils.formatFilterParams(params, "seq", ["min_ext_coef", "max_ext_coef", "min_pi", "max_pi"])
     def af2_filter_params = Utils.formatFilterParams(params, "af2", ["min_iptm", "max_pae_interaction", "max_pae_overall", "max_pae_binder", "max_pae_target", "min_plddt_overall", "min_plddt_binder", "min_plddt_target", "max_rmsd_overall", "max_rmsd_binder_bndaln", "max_rmsd_binder_tgtaln", "max_rmsd_target"])
-    def boltz_filter_params = Utils.formatFilterParams(params, "boltz", ["max_rmsd_overall", "max_rmsd_binder", "max_rmsd_target", "min_conf_score", "min_ptm", "min_ptm_binder", "min_ptm_target", "min_iptm", "min_plddt", "min_iplddt", "max_pde", "max_ipde", "min_ipSAE_min", "min_LIS", "min_pDockQ2_min", "max_pae_interaction"])
+    def boltz_filter_params = Utils.formatFilterParams(params, "boltz", ["max_rmsd_overall", "max_rmsd_binder", "max_rmsd_target", "min_conf_score", "min_ptm", "min_ptm_binder", "min_ptm_target", "min_iptm", "min_plddt", "min_iplddt", "max_pde", "max_ipde", "min_ipSAE_min", "min_LIS", "min_pDockQ2_min", "max_pae_interaction", "max_unbound_rmsd", "min_unbound_conf_score", "min_unbound_ptm", "min_unbound_plddt", "max_unbound_pde"])
     def analysis_filter_params = Utils.formatFilterParams(params, "pr", ["min_helices", "max_helices", "min_strands", "max_strands", "min_total_ss", "max_total_ss", "min_rog", "max_rog", "min_intface_bsa", "min_intface_shpcomp", "min_intface_hbonds", "max_intface_unsat_hbonds", "max_intface_deltag", "max_intface_deltagtobsa", "max_surfhphobics", "max_sap", "max_sap_complex"])
 
     println("***********************************************************************")
@@ -576,7 +578,7 @@ workflow {
             }
 
             // Prep yaml files for Boltz-2
-            PrepBoltz(pred_input_pdbs, msa_input, is_binder_mode)
+            PrepBoltz(pred_input_pdbs, msa_input, is_binder_mode, false)
 
             // Handle templates - use empty channel if not present
             PrepBoltz.out.templates
@@ -625,11 +627,53 @@ workflow {
             else {
                 AlignBoltz(boltz_with_metrics, designs_for_alignment, 'monomer')
             }
+
+            // Optional unbound (target-free) binder-only prediction, for QC of fold consistency
+            // in the absence of the target. Runs as a fully separate Boltz-2 prediction of chain A only.
+            def unbound_json_files
+            if (is_binder_mode && params.boltz_predict_unbound_binder) {
+                PrepBoltzUnbound(pred_input_pdbs, file("${projectDir}/lib/NO_FILE"), is_binder_mode, true)
+
+                PrepBoltzUnbound.out.templates
+                    .ifEmpty(file("${projectDir}/lib/NO_FILE"))
+                    .set { unbound_templates_ch }
+
+                PrepBoltzUnbound.out.msa_file
+                    .ifEmpty(file("${projectDir}/lib/NO_FILE"))
+                    .set { unbound_msa_ch }
+
+                Utils
+                    .rebatchGPU(PrepBoltzUnbound.out.yamls, params.gpus)
+                    .combine(unbound_templates_ch)
+                    .combine(unbound_msa_ch)
+                    .set { unbound_pred_input_tuple }
+
+                RunBoltzUnbound(unbound_pred_input_tuple)
+
+                Utils
+                    .rebatchTuples(RunBoltzUnbound.out.pdbs_jsons, 200)
+                    .set { unbound_pred_tuple }
+
+                // Align to the original (binder+target) design, comparing chain A only
+                AlignBoltzUnbound(unbound_pred_tuple, designs_for_alignment, 'unbound_binder')
+
+                CompressBoltzUnbound("boltz_unbound", AlignBoltzUnbound.out.pdbs_jsons.flatten().collect())
+
+                AlignBoltzUnbound.out.pdbs_jsons
+                    .map { pdbs, jsons -> jsons }
+                    .flatten()
+                    .collect()
+                    .set { unbound_json_files_ch }
+                unbound_json_files = unbound_json_files_ch
+            } else {
+                unbound_json_files = file("${projectDir}/lib/NO_FILE")
+            }
+
             // Compress output files
             CompressBoltz("boltz", AlignBoltz.out.pdbs_jsons.flatten().collect())
 
             // Filtering of Boltz-2 results
-            FilterBoltz(AlignBoltz.out.pdbs_jsons, boltz_filter_params)
+            FilterBoltz(AlignBoltz.out.pdbs_jsons, boltz_filter_params, unbound_json_files)
             FilterBoltz.out.pdbs
                 .flatten()
                 .collect()
@@ -699,7 +743,7 @@ workflow {
             }
 
             // Prep yaml files for Boltz-2
-            PrepBoltz(boltz_input_pdbs, msa_input, is_binder_mode)
+            PrepBoltz(boltz_input_pdbs, msa_input, is_binder_mode, false)
 
             // Handle templates - use empty channel if not present
             PrepBoltz.out.templates
@@ -748,11 +792,53 @@ workflow {
             else {
                 AlignBoltz(boltz_with_metrics, designs_for_alignment, 'monomer')
             }
+
+            // Optional unbound (target-free) binder-only prediction, for QC of fold consistency
+            // in the absence of the target. Runs as a fully separate Boltz-2 prediction of chain A only.
+            def unbound_json_files
+            if (is_binder_mode && params.boltz_predict_unbound_binder) {
+                PrepBoltzUnbound(boltz_input_pdbs, file("${projectDir}/lib/NO_FILE"), is_binder_mode, true)
+
+                PrepBoltzUnbound.out.templates
+                    .ifEmpty(file("${projectDir}/lib/NO_FILE"))
+                    .set { unbound_templates_ch }
+
+                PrepBoltzUnbound.out.msa_file
+                    .ifEmpty(file("${projectDir}/lib/NO_FILE"))
+                    .set { unbound_msa_ch }
+
+                Utils
+                    .rebatchGPU(PrepBoltzUnbound.out.yamls, params.gpus)
+                    .combine(unbound_templates_ch)
+                    .combine(unbound_msa_ch)
+                    .set { unbound_pred_input_tuple }
+
+                RunBoltzUnbound(unbound_pred_input_tuple)
+
+                Utils
+                    .rebatchTuples(RunBoltzUnbound.out.pdbs_jsons, 200)
+                    .set { unbound_pred_tuple }
+
+                // Align to the original (binder+target) design, comparing chain A only
+                AlignBoltzUnbound(unbound_pred_tuple, designs_for_alignment, 'unbound_binder')
+
+                CompressBoltzUnbound("boltz_unbound", AlignBoltzUnbound.out.pdbs_jsons.flatten().collect())
+
+                AlignBoltzUnbound.out.pdbs_jsons
+                    .map { pdbs, jsons -> jsons }
+                    .flatten()
+                    .collect()
+                    .set { unbound_json_files_ch }
+                unbound_json_files = unbound_json_files_ch
+            } else {
+                unbound_json_files = file("${projectDir}/lib/NO_FILE")
+            }
+
             // Compress output files
             CompressBoltz("boltz", AlignBoltz.out.pdbs_jsons.flatten().collect())
 
             // Filtering of Boltz-2 results
-            FilterBoltz(AlignBoltz.out.pdbs_jsons, boltz_filter_params)
+            FilterBoltz(AlignBoltz.out.pdbs_jsons, boltz_filter_params, unbound_json_files)
             FilterBoltz.out.pdbs
                 .flatten()
                 .collect()

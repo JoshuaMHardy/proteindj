@@ -84,6 +84,13 @@ Metrics from AlphaFold2 Initial-Guess or Boltz-2 predictions evaluating structur
 | `boltz_ptm_binder`       | pTM score for the binder chain only  (0-1 scale; higher is better). |
 | `boltz_ptm_target`       | Mean pTM score across all target chains (0-1 scale; higher is better).      |
 | `boltz_iptm`    | Mean binder→target interface pTM score across all target chains (0-1 scale; higher is better). |
+| `boltz_unbound_rmsd`     | C-alpha RMSD of the unbound (target-free) binder prediction vs the binder chain of the input design* |
+| `boltz_unbound_conf_score` | Confidence score of the unbound (target-free) binder prediction; higher is more confident* |
+| `boltz_unbound_ptm`      | Predicted template modeling score of the unbound (target-free) binder prediction (0-1 scale; higher is better)* |
+| `boltz_unbound_plddt`    | Predicted LDDT score of the unbound (target-free) binder prediction (0-1 scale; higher is better)* |
+| `boltz_unbound_pde`      | Predicted distance error of the unbound (target-free) binder prediction; lower is better* |
+
+*Requires `boltz_predict_unbound_binder = true` to generate unbound binder predictions.
 
 ---
 

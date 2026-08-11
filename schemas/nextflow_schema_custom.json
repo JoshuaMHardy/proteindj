@@ -533,6 +533,12 @@
           "hidden": true,
           "description": "Additional configuration parameters to pass to Boltz-2 that are not externalised in Nextflow. e.g. '--msa_pairing_strategy complete'",
           "default": null
+        },
+        "boltz_predict_unbound_binder": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also predict the binder alone (no target) as a target-free monomer prediction with Boltz-2, to check whether the binder folds consistently to the design in the absence of the target. Binder design modes only. Runs as a pure single-sequence prediction (no template, no MSA).",
+          "hidden": true
         }
       }
     },
@@ -760,6 +766,36 @@
         "boltz_max_pae_interaction": {
           "type": "number",
           "description": "Maximum predicted aligned error at interaction interfaces (0 to ~30 Angstroms)",
+          "hidden": true,
+          "default": "null"
+        },
+        "boltz_max_unbound_rmsd": {
+          "type": "number",
+          "description": "Max C-alpha RMSD between the unbound (target-free) binder prediction and the design. Requires boltz_predict_unbound_binder=true.",
+          "hidden": true,
+          "default": "null"
+        },
+        "boltz_min_unbound_conf_score": {
+          "type": "number",
+          "description": "Minimum confidence score of the unbound (target-free) binder prediction. Requires boltz_predict_unbound_binder=true.",
+          "hidden": true,
+          "default": "null"
+        },
+        "boltz_min_unbound_ptm": {
+          "type": "number",
+          "description": "Minimum pTM score of the unbound (target-free) binder prediction. Requires boltz_predict_unbound_binder=true.",
+          "hidden": true,
+          "default": "null"
+        },
+        "boltz_min_unbound_plddt": {
+          "type": "number",
+          "description": "Minimum pLDDT score of the unbound (target-free) binder prediction. Requires boltz_predict_unbound_binder=true.",
+          "hidden": true,
+          "default": "null"
+        },
+        "boltz_max_unbound_pde": {
+          "type": "number",
+          "description": "Maximum PDE score of the unbound (target-free) binder prediction. Requires boltz_predict_unbound_binder=true.",
           "hidden": true,
           "default": "null"
         },

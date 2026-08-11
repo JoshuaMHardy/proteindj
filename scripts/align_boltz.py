@@ -111,6 +111,20 @@ def align_structures(args):
                 "boltz_rmsd_binder": round(rmsd_binder, 2)
             }
 
+        elif design_type == 'unbound_binder':
+            # Reference is still the full (binder+target) design; only chain A (binder) is compared
+            # against the target-free prediction, which contains just that one chain.
+            ref_chainA = get_chain_ca_atoms(ref_structure, 'A')
+            boltz_all_ca = get_all_ca_atoms(boltz_structure)
+
+            superimposer = Superimposer()
+            superimposer.set_atoms(ref_chainA, boltz_all_ca)
+            superimposer.apply(boltz_structure.get_atoms())
+
+            rmsd_data = {
+                "boltz_unbound_rmsd": round(superimposer.rms, 2)
+            }
+
         else:  # Monomer design
             ref_atoms = get_all_ca_atoms(ref_structure)
             boltz_atoms = get_all_ca_atoms(boltz_structure)
@@ -166,7 +180,18 @@ def align_structures(args):
                     "boltz_pde": round(data.get("complex_pde", 0), 2),
                     "boltz_ipde": round(data.get("complex_ipde", 0), 2)
                 }
-            else:
+            elif design_type == 'unbound_binder':
+                out_json = {
+                    "fold_id": fold_id,
+                    "seq_id": seq_id,
+                    "description": boltz_path.name,
+                    "boltz_unbound_rmsd": round(rmsd_data.get("boltz_unbound_rmsd", 0), 2),
+                    "boltz_unbound_conf_score": round(data.get("confidence_score", 0), 3),
+                    "boltz_unbound_ptm": round(data.get("ptm", 0), 3),
+                    "boltz_unbound_plddt": round(data.get("complex_plddt", 0), 3),
+                    "boltz_unbound_pde": round(data.get("complex_pde", 0), 2),
+                }
+            else: # Monomer design
                 out_json = {
                     "fold_id": fold_id,
                     "seq_id": seq_id,
@@ -181,7 +206,7 @@ def align_structures(args):
             with open(dst_json, 'w') as f:
                 json.dump(out_json, f, indent=2)
 
-        return (boltz_path.name, rmsd_data.get('boltz_rmsd_overall'), None)
+        return (boltz_path.name, rmsd_data.get('boltz_rmsd_overall', rmsd_data.get('boltz_unbound_rmsd')), None)
 
     except Exception as e:
         logger.error(f"Failed {boltz_path.name}: {str(e)}")
@@ -195,8 +220,9 @@ def main():
                       help="Directory with Boltz PDBs and JSONs (fold_*_seq_*_boltzpred.pdb)")
     parser.add_argument("--output_dir", type=Path, default="aligned",
                       help="Output directory for results")
-    parser.add_argument("--design_type", choices=['binder', 'monomer'], required=True,
-                      help="Design type: 'binder' (A/B chains) or 'monomer (A chain)'")
+    parser.add_argument("--design_type", choices=['binder', 'monomer', 'unbound_binder'], required=True,
+                      help="Design type: 'binder' (A/B chains), 'monomer' (A chain), or "
+                           "'unbound_binder' (target-free binder-only prediction aligned to chain A)")
     parser.add_argument("--ncpus", type=int, default=1,
                       help="Number of CPUs for parallel processing")
     args = parser.parse_args()
@@ -237,11 +263,16 @@ def main():
             logger.warning(f"No design file for fold {fold_id} seq {seq_id}, skipping {boltz_file.name}")
             continue
             
-        # Generate paths
+        # Generate paths. For unbound_binder, rename outputs so they never collide with the
+        # bound-run outputs when both are later staged into the same downstream task directory.
         base_name = boltz_file.stem  # fold_X_seq_Y_boltzpred
         src_json = args.boltz_dir / f"{base_name}.json"
-        out_pdb = args.output_dir / f"{base_name}.pdb"
-        dst_json = args.output_dir / f"{base_name}.json"
+        if args.design_type == 'unbound_binder':
+            out_base_name = base_name.replace('_boltzpred', '_unbound_boltzpred')
+        else:
+            out_base_name = base_name
+        out_pdb = args.output_dir / f"{out_base_name}.pdb"
+        dst_json = args.output_dir / f"{out_base_name}.json"
         
         tasks.append((
             design_files[key],

@@ -44,6 +44,19 @@ def parse_arguments():
                     help='Minimum predicted DockQ Score v2')
     parser.add_argument('--boltz-max-pae-interaction', type=float,
                     help='Maximum predicted aligned error at interface')
+    parser.add_argument('--boltz-max-unbound-rmsd', type=float,
+                    help='Maximum allowed C-alpha RMSD between the unbound (target-free) binder prediction and the design')
+    parser.add_argument('--boltz-min-unbound-conf-score', type=float,
+                    help='Minimum confidence score for the unbound (target-free) binder prediction')
+    parser.add_argument('--boltz-min-unbound-ptm', type=float,
+                    help='Minimum pTM score for the unbound (target-free) binder prediction')
+    parser.add_argument('--boltz-min-unbound-plddt', type=float,
+                    help='Minimum pLDDT score for the unbound (target-free) binder prediction')
+    parser.add_argument('--boltz-max-unbound-pde', type=float,
+                    help='Maximum PDE score for the unbound (target-free) binder prediction')
+    parser.add_argument('--unbound-json-directory',
+                    help='Path to directory containing unbound (target-free) binder prediction JSON files '
+                         '(fold_*_seq_*_unbound_boltzpred.json), merged into each matching entry before filtering')
     parser.add_argument('--output-directory', default='output', help='Directory to copy passing PDB files to')
     parser.add_argument('--output-score-file', default='filtered.jsonl')
     parser.add_argument('--num-to-extract', type=int, help='Number of designs to extract (extracts all if not specified)')
@@ -75,6 +88,10 @@ def read_data_from_directory(directory_path, pattern='*.json'):
             try:
                 # Extract metadata from filename
                 filename = Path(json_file).stem
+                if filename.endswith('_unbound_boltzpred'):
+                    # Unbound (target-free) binder predictions are merged in separately via
+                    # --unbound-json-directory, not treated as independent bound-design entries
+                    continue
                 match = re.match(r'fold_(\d+)_seq_(\d+)_.*', filename)
                 if not match:
                     print(f"Skipping invalid filename format: {filename}")
@@ -128,6 +145,32 @@ def read_data_from_directory(directory_path, pattern='*.json'):
     except Exception as e:
         print(f"Error reading JSON files from directory: {e}", file=sys.stderr)
         sys.exit(1)
+
+UNBOUND_METRIC_KEYS = ('boltz_unbound_rmsd', 'boltz_unbound_conf_score', 'boltz_unbound_ptm', 'boltz_unbound_plddt', 'boltz_unbound_pde')
+
+def load_unbound_metadata(directory):
+    """
+    Load unbound (target-free) binder prediction JSON files and index by (fold_id, seq_id).
+
+    Only the boltz_unbound_* metric keys are kept, so merging can never clobber unrelated
+    fields (e.g. description) on the matching bound entry.
+
+    Returns:
+        Dict mapping (fold_id, seq_id) -> dict of boltz_unbound_* metrics
+    """
+    lookup = {}
+    json_files = glob.glob(os.path.join(directory, 'fold_*_seq_*_unbound_boltzpred.json'))
+    for json_file in json_files:
+        match = re.match(r'fold_(\d+)_seq_(\d+)_unbound_boltzpred', Path(json_file).stem)
+        if not match:
+            continue
+        fold_id = int(match.group(1))
+        seq_id = int(match.group(2))
+        with open(json_file, 'r') as f:
+            entry = json.load(f)
+        lookup[(fold_id, seq_id)] = {k: v for k, v in entry.items() if k in UNBOUND_METRIC_KEYS}
+    print(f"Loaded {len(lookup)} unbound binder prediction entries from {directory}")
+    return lookup
 
 def filter_data(data, args):
     passed_designs = []
@@ -225,6 +268,32 @@ def filter_data(data, args):
                 if pae_interaction > args.boltz_max_pae_interaction:
                     failures.append(f"pae_interaction {pae_interaction:.2f} > {args.boltz_max_pae_interaction}")
 
+            # Unbound (target-free) binder prediction checks
+            if args.boltz_max_unbound_rmsd:
+                unbound_rmsd = entry.get('boltz_unbound_rmsd', 1000)
+                if unbound_rmsd > args.boltz_max_unbound_rmsd:
+                    failures.append(f"unbound_rmsd {unbound_rmsd:.2f} > {args.boltz_max_unbound_rmsd}")
+
+            if args.boltz_min_unbound_conf_score:
+                unbound_conf_score = entry.get('boltz_unbound_conf_score', 0)
+                if unbound_conf_score < args.boltz_min_unbound_conf_score:
+                    failures.append(f"unbound_conf_score {unbound_conf_score:.3f} < {args.boltz_min_unbound_conf_score}")
+
+            if args.boltz_min_unbound_ptm:
+                unbound_ptm = entry.get('boltz_unbound_ptm', 0)
+                if unbound_ptm < args.boltz_min_unbound_ptm:
+                    failures.append(f"unbound_ptm {unbound_ptm:.3f} < {args.boltz_min_unbound_ptm}")
+
+            if args.boltz_min_unbound_plddt:
+                unbound_plddt = entry.get('boltz_unbound_plddt', 0)
+                if unbound_plddt < args.boltz_min_unbound_plddt:
+                    failures.append(f"unbound_plddt {unbound_plddt:.3f} < {args.boltz_min_unbound_plddt}")
+
+            if args.boltz_max_unbound_pde:
+                unbound_pde = entry.get('boltz_unbound_pde', 0)
+                if unbound_pde > args.boltz_max_unbound_pde:
+                    failures.append(f"unbound_pde {unbound_pde:.2f} > {args.boltz_max_unbound_pde}")
+
             if not failures:
                 passed_designs.append(entry['description'])
                 passed_entries.append(entry)
@@ -280,13 +349,19 @@ def main():
     
     # Read and filter data from directory
     data = read_data_from_directory(args.json_directory, args.json_pattern)
-    
+
     if not data:
         print("No data found in the JSON files. Exiting.")
         sys.exit(0)
-        
+
     print(f"Total entries loaded from all JSON files: {len(data)}")
-    
+
+    # Merge in unbound (target-free) binder prediction metrics, keyed by (fold_id, seq_id)
+    if args.unbound_json_directory:
+        unbound_lookup = load_unbound_metadata(args.unbound_json_directory)
+        for entry in data:
+            entry.update(unbound_lookup.get((entry.get('fold_id'), entry.get('seq_id')), {}))
+
     # Check if any filter is applied
     any_filter_applied = (
         args.boltz_max_rmsd_overall is not None or
@@ -300,7 +375,12 @@ def main():
         args.boltz_min_plddt is not None or
         args.boltz_min_iplddt is not None or
         args.boltz_max_pde is not None or
-        args.boltz_max_ipde is not None
+        args.boltz_max_ipde is not None or
+        args.boltz_max_unbound_rmsd is not None or
+        args.boltz_min_unbound_conf_score is not None or
+        args.boltz_min_unbound_ptm is not None or
+        args.boltz_min_unbound_plddt is not None or
+        args.boltz_max_unbound_pde is not None
     )
     
     if not any_filter_applied:

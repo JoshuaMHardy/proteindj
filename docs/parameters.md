@@ -196,6 +196,7 @@ Advanced parameters to control the behaviour of Full-Atom MPNN
 | `boltz_template_threshold` | null    | Distance threshold in Angstroms for template deviation. If specified with `boltz_template_force = true`, constrains prediction near template.                                        |
 | `boltz_input_msa` | null | Path to a multiple sequence alignment (.a3m format) for the input PDB. For binder modes, MSA is applied to chain B (target), and for monomer modes, MSA is applied to chain A. MSA must match entire sequence of chain or will be ignored by Boltz. It will also be ignored if there are multiple target chains. If null, single-sequence mode is used (msa: empty in YAML). e.g. 'lib/pdl1_msa.a3m' |
 | `boltz_extra_config`       | null    | Additional raw parameters for Boltz-2 predictions. e.g. '--msa_pairing_strategy complete'                                                                                            |
+| `boltz_predict_unbound_binder` | false | Also predict the binder alone (no target) as a target-free monomer prediction with Boltz-2, to check whether the binder folds consistently to the design in the absence of the target. Binder design modes only. Runs as a pure single-sequence prediction (no template, no MSA). |
 
 ---
 
@@ -299,6 +300,13 @@ Boltz-2 Filtering Parameters.
 | `boltz_min_iplddt` | Minimum pLDDT score of the prediction interface                                                   |
 | `boltz_max_pde`             | Maximum predicted distance error of the prediction                                                |
 | `boltz_max_ipde`   | Maximum predicted distance error for the prediction interface                                     |
+| `boltz_max_unbound_rmsd`    | Max C-alpha RMSD between the unbound (target-free) binder prediction and the design*|
+| `boltz_min_unbound_conf_score` | Minimum confidence score of the unbound (target-free) binder prediction*|
+| `boltz_min_unbound_ptm`     | Minimum pTM score of the unbound (target-free) binder prediction*|
+| `boltz_min_unbound_plddt`   | Minimum pLDDT score of the unbound (target-free) binder prediction* |
+| `boltz_max_unbound_pde`     | Maximum PDE score of the unbound (target-free) binder prediction* |
+
+*Requires `boltz_predict_unbound_binder = true` to generate unbound binder predictions.
 
 ### Analysis Filtering Parameters
 

@@ -213,7 +213,7 @@ def generate_yaml_config(sequences, use_template=False, pdb_filename=None,
 
 def process_pdb_files(input_dir, output_dir, use_template=False, template_chain='B',
                       template_force=False, template_threshold=None, msa_file=None,
-                      msa_chain=None, max_break_distance=3.0):
+                      msa_chain=None, max_break_distance=3.0, binder_only_chain=None):
     """
     Process PDB files and generate YAML configs with optional PDB templates and MSA.
 
@@ -227,7 +227,15 @@ def process_pdb_files(input_dir, output_dir, use_template=False, template_chain=
         msa_file: Path to MSA file (.a3m format) to use for specified chain
         msa_chain: Chain ID to apply MSA to (default None)
         max_break_distance: Maximum C→N distance (Å) to consider a chain break
+        binder_only_chain: If set, restrict the YAML to only this original chain's (sub-)chains
+                            (e.g. for an unbound/target-free binder-only prediction), and disable
+                            templates/MSA since there is no target to template/align against
     """
+    if binder_only_chain:
+        use_template = False
+        msa_file = None
+        msa_chain = None
+
     os.makedirs(output_dir, exist_ok=True)
 
     templates_dir = None
@@ -250,6 +258,14 @@ def process_pdb_files(input_dir, output_dir, use_template=False, template_chain=
                 pdb_path, msa_file=msa_file, msa_chain=msa_chain,
                 max_break_distance=max_break_distance
             )
+
+            if binder_only_chain:
+                keep_ids = set(chain_id_map.get(binder_only_chain, [binder_only_chain]))
+                sequences = [seq for seq in sequences if seq['id'] in keep_ids]
+                if not sequences:
+                    print(f'ERROR: Binder-only chain "{binder_only_chain}" not found in {filename}')
+                    print(f'       Skipping this file...\n')
+                    continue
 
             if use_template:
                 if template_chain not in chain_id_map:
@@ -310,6 +326,9 @@ def main():
                         help='Chain ID to apply MSA to (default: same as template-chain)')
     parser.add_argument('--max-break-distance', type=float, default=3.0,
                         help='Maximum C→N distance (Å) to consider a chain break (default: 3.0)')
+    parser.add_argument('--binder-only-chain', default=None,
+                        help='Restrict YAML to only this original chain (e.g. "A") for an '
+                             'unbound/target-free binder-only prediction. Disables templates/MSA.')
 
     args = parser.parse_args()
     output_dir = args.output if args.output else args.input
@@ -325,7 +344,8 @@ def main():
         template_threshold=args.template_threshold,
         msa_file=args.msa_file,
         msa_chain=msa_chain if args.msa_file else None,
-        max_break_distance=args.max_break_distance
+        max_break_distance=args.max_break_distance,
+        binder_only_chain=args.binder_only_chain
     )
 
 
