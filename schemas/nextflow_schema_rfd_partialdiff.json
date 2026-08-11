@@ -197,10 +197,10 @@
         }
       }
     },
-    "proteinmpnn_fastrelax_parameters": {
-      "title": "ProteinMPNN-FastRelax Parameters",
+    "proteinmpnn_openmmrelax_parameters": {
+      "title": "ProteinMPNN-OpenMMRelax Parameters",
       "type": "object",
-      "description": "Advanced parameters to control the behaviour of ProteinMPNN-FastRelax. Used for binder design modes only.",
+      "description": "Advanced parameters to control the behaviour of ProteinMPNN-OpenMMRelax. Used for binder design modes only.",
       "default": "",
       "properties": {
         "mpnn_omitAAs": {
@@ -281,7 +281,7 @@
         },
         "mpnn_extra_config": {
           "type": "string",
-          "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'",
+          "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'",
           "hidden": true
         }
       }
@@ -807,7 +807,7 @@
       "$ref": "#/definitions/rfdiffusion_advanced_parameters"
     },
     {
-      "$ref": "#/definitions/proteinmpnn_fastrelax_parameters"
+      "$ref": "#/definitions/proteinmpnn_openmmrelax_parameters"
     },
     {
       "$ref": "#/definitions/full_atom_mpnn_parameters"

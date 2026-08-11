@@ -395,7 +395,7 @@ rfd_partialdiff_binder {
 }
 ```
 
-By default, partial diffusion does not preserve the original identity of any residue, so downstream sequence design (ProteinMPNN-FastRelax/FAMPNN) is free to redesign the sequence of every diffused residue from scratch. Use `rfd_partialdiff_fixed_seq` to keep specific design-chain residues' sequence unchanged (both through partial diffusion and the downstream sequence design step) while their structure is still noised/denoised. This only accepts residues on the design chain (chain A in binder mode, the sole chain in monomer mode):
+By default, partial diffusion does not preserve the original identity of any residue, so downstream sequence design (ProteinMPNN-OpenMMRelax/FAMPNN) is free to redesign the sequence of every diffused residue from scratch. Use `rfd_partialdiff_fixed_seq` to keep specific design-chain residues' sequence unchanged (both through partial diffusion and the downstream sequence design step) while their structure is still noised/denoised. This only accepts residues on the design chain (chain A in binder mode, the sole chain in monomer mode):
 
 ```
 rfd_partialdiff_binder {

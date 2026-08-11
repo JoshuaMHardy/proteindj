@@ -266,7 +266,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -1218,7 +1218,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -2171,7 +2171,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -3121,7 +3121,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -4079,7 +4079,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -4998,7 +4998,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [
@@ -5909,7 +5909,7 @@
         "string",
         "null"
       ],
-      "description": "Additional configuration parameters to pass to ProteinMPNN-FastRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
+      "description": "Additional configuration parameters to pass to ProteinMPNN-OpenMMRelax that are not externalised in Nextflow. e.g. '-protein_features=\"full\"'"
     },
     "fampnn_fix_target_sidechains": {
       "type": [

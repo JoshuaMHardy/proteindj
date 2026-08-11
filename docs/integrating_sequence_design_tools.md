@@ -1,6 +1,6 @@
 # Integrating a New Sequence Design Tool into ProteinDJ
 
-This document reverse-engineers how **ProteinMPNN-FastRelax (MPNN)** and **Full-Atom MPNN
+This document reverse-engineers how **ProteinMPNN-OpenMMRelax (MPNN)** and **Full-Atom MPNN
 (FAMPNN)** were integrated into ProteinDJ as interchangeable engines for the "Sequence Design"
 stage. It is intended as a template/checklist for integrating other sequence design tools (e.g.
 LigandMPNN, ESM-IF, another inverse-folding model, etc.).
@@ -227,7 +227,7 @@ appear in every mode column) rather than being mode-specific.
    `mode_parameters.csv`; it regenerates every per-mode schema plus bindsweeper's
    `binder_schema.json` in one step.
 4. **[docs/parameters.md](parameters.md)** — add a `## <Tool> Advanced Parameters` table (see the
-   existing `## ProteinMPNN-FastRelax Advanced Parameters` / `## Full-Atom MPNN (FAMPNN) Advanced
+   existing `## ProteinMPNN-OpenMMRelax Advanced Parameters` / `## Full-Atom MPNN (FAMPNN) Advanced
    Parameters` sections) and a row for the new score-threshold param under `### Sequence Filtering
    Parameters`. Unlike fold design tools, a new sequence design tool generally does **not** need a
    new section in [docs/modes.md](modes.md), since it isn't a `design_mode`.
@@ -321,7 +321,7 @@ two templates. Concretely, to add tool `X` (prefix `x_`) as a new `seq_method` v
 
 6. **Docs**
    - [ ] Add a `## X Advanced Parameters` table to [docs/parameters.md](parameters.md) (mirror the
-     ProteinMPNN-FastRelax / FAMPNN sections) and a row under `### Sequence Filtering Parameters`
+     ProteinMPNN-OpenMMRelax / FAMPNN sections) and a row under `### Sequence Filtering Parameters`
      for the new score threshold param.
    - [ ] Update the `seq_method` description/enum in [nextflow.config](../nextflow.config) and
      [README.md](../README.md).

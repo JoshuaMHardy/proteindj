@@ -144,9 +144,9 @@ Advanced parameters to control the behaviour of BoltzGen (see [BoltzGen Design m
 
 ---
 
-## ProteinMPNN-FastRelax Advanced Parameters
+## ProteinMPNN-OpenMMRelax Advanced Parameters
 
-Advanced parameters to control the behaviour of ProteinMPNN-FastRelax.
+Advanced parameters to control the behaviour of ProteinMPNN-OpenMMRelax.
 
 | Parameter                           | Default      | Description                                                                                                                                                                             |
 | ----------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -155,13 +155,13 @@ Advanced parameters to control the behaviour of ProteinMPNN-FastRelax.
 | `mpnn_checkpoint_type`              | `'soluble'`  | Checkpoint selection: `'vanilla'`, `'soluble'` or `'hyper'`.                                                                                                                            |
 | `mpnn_checkpoint_model`             | `'v_48_020'` | Checkpoint model variant indicating backbone noise level used during training. e.g. 'v_48_020' noised with 0.20Å Gaussian noise. Choose from 'v_48_002','v_48_010,'v_48_020','v_48_030' |
 | `mpnn_backbone_noise`               | 0            | Std dev Gaussian noise added to backbone atoms. 0 = none, 0.1-0.3 = mild perturbation.                                                                                                  |
-| `mpnn_relax_max_cycles`             | 0            | Max fast relaxation cycles per sequence; 0 disables FastRelax functionality.                                                                                                            |
+| `mpnn_relax_max_cycles`             | 0            | Max fast relaxation cycles per sequence; 0 disables OpenMMRelax functionality.                                                                                                            |
 | `mpnn_relax_seqs_per_cycle`         | 1            | Number of sequences generated between relaxation steps; best scored sequence is kept.                                                                                                   |
 | `mpnn_relax_output`                 | false        | Whether to run relaxation before saving output.                                                                                                                                         |
 | `mpnn_relax_convergence_rmsd`       | 0.2          | RMSD early convergence threshold for relaxation cycles. Design is considered converged if the C-alpha RMSD (Å) between cycles is <= this threshold.                                     |
 | `mpnn_relax_convergence_score`      | 0.1          | Score early convergence threshold for relaxation cycles. Design is considered converged if the improvement in score between cycles is <= this threshold.                                |
 | `mpnn_relax_convergence_max_cycles` | 1            | Design is considered converged if it meets both convergence criteria for n consecutive cycles.                                                                                          |
-| `mpnn_extra_config`                 | null         | Additional raw configuration passed to ProteinMPNN-FastRelax. e.g. `-protein_features="full"'`                                                                                          |
+| `mpnn_extra_config`                 | null         | Additional raw configuration passed to ProteinMPNN-OpenMMRelax. e.g. `-protein_features="full"'`                                                                                          |
 
 ---
 
