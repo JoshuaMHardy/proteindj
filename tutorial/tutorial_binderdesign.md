@@ -25,11 +25,11 @@ Check the instructions in [installation.md](../docs/installation.md) to install 
 
 ## Target preparation <a name="target-prep"></a>
 
-Before you begin design binders, you need to prepare a target protein structure. The success of binder design depends greatly on the quality of the input model and how well it represents the protein in solution. Proteins with large intrinsically disordered regions (IDRs) are much harder to work with since the conformations and positions of these parts is not certain. Similarly, proteins with post-translation modifications (e.g. phosphorylation, glycosylation) on their surface may inhibit protein-protein interactions. Be mindful of this when selecting an experimental structure and also check if the protein was modified/tagged/truncated from it's natural state which you may be targeting in vitro/in vivo. If your experimental structure is missing residues, a common rescue approach is to use template-guided structure prediction to replace them (e.g. using AlphaFold/Boltz). If you suspect the absence of the residues in the structure is due to flexibility (often indicated in a structure prediction by \< 50 pLDDT), record the residue ranges so that you can use this during design. 
+Before you begin design binders, you need to prepare a target protein structure. The success of binder design depends greatly on the quality of the input model and how well it represents the protein in solution. Proteins with large intrinsically disordered regions (IDRs) are much harder to work with since the conformations and positions of these parts is not certain. Similarly, proteins with post-translation modifications (e.g. phosphorylation, glycosylation) on their surface may inhibit protein-protein interactions. Be mindful of this when selecting an experimental structure and also check if the protein was modified/tagged/truncated from it's natural state which you may be targeting in vitro/in vivo. If your experimental structure is missing residues, a common rescue approach is to use [template-guided structure prediction](https://www.ebi.ac.uk/training/online/courses/alphafold/advanced-modeling-and-applications-of-predicted-protein-structures/customising-alphafold-structure-predictions/) to replace them (e.g. using AlphaFold/Boltz). If you suspect the absence of the residues in the structure is due to flexibility (often indicated in a structure prediction by \< 50 [pLDDT](https://www.ebi.ac.uk/training/online/courses/alphafold/inputs-and-outputs/evaluating-alphafolds-predicted-structures-using-confidence-scores/plddt-understanding-local-confidence/)), record the residue ranges so that you can use this during design. 
 
-Binder design algorithms scale exponentially with the size of your input, so it is common practice to trim structures down to the domain(s) of interest. Overcropping, especially when it leaves incomplete folds with exposed inner residues can lead to issues with structure prediction so there is a balance.
+Binder design algorithms runtime and memory requirements can scale exponentially with the size of your input, so it is common practice to trim structures down to the domain(s) of interest. Overcropping, especially when it leaves incomplete folds with exposed inner residues can lead to issues with structure prediction so there is a balance.
 
-For this tutorial, we are starting with a crystal structure of the insulin receptor (PDB: 4ZXB). This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
+For this tutorial, we are starting with a crystal structure of the insulin receptor [(PDB: 4ZXB) by Croll et al.](https://www.rcsb.org/structure/4ZXB). This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
 
 <img src='tutorial_chimerax_target.png' width='400'>
 
@@ -223,7 +223,7 @@ Pipeline results summary:
 * After Ranking, will output all 28 designs
 ```
 
-If you don't see any designs pass, consider trying different hotspots, fold design programs (BindCraft/BoltzGen) or adjusting filters if you see near misses. Before trying 1000s of designs which could take several days to complete you can try doubling or tripling the designs instead. If your project is restricted to a very specific hotspot and your success rate is low then you have no choice but to run larger numbers of designs.
+If you don't see any designs pass, consider trying different hotspots, fold design programs (BindCraft/RFdiffusion) or adjusting filters if you see near misses. Before trying 1000s of designs which could take several days to complete you can try doubling or tripling the designs instead. If your project is restricted to a very specific hotspot and your success rate is low then you have no choice but to run larger numbers of designs.
 
 To increase the number of designs, you add the num_designs parameter to your config file or can pass it via the commandline. Numbers that split evenly over your GPUs are the most efficient:
 
@@ -243,7 +243,7 @@ You can rank designs using any structure prediction metric, although we default 
 
 Remember that you can always adjust your ranking after the designs are run by sorting/filtering the CSV file. The binder sequences are embedded in the CSV file making it easy to compile a list of your favourite designs.
 
-Here is an example of a highly confident binder (ipSAE=0.734, pae_interaction=4.28, iptm=0.923, rmsd_overall=0.73). Although this binder is small and contains only 61 residues it still has a buried surface area of 913 Å with a shape complementarity of 0.71/1. It is also near the hotspots were designed against an away from the glycan we were trying to avoid. However, since this target patch is mostly hydrophobic, the binder has a hydrophobic surface to match (SAP=0.89/1, SAP_complex=0.39/1) which may affect its solubility, especailly if expressed without the target protein.
+Here is an example of a highly confident binder (ipSAE=0.734, pae_interaction=4.28, iptm=0.923, rmsd_overall=0.73). Although this binder is small and contains only 61 residues it still has a buried surface area of 913 Å with a shape complementarity of 0.71/1. It is also near the hotspots were designed against an away from the glycan we were trying to avoid. However, since this target patch is mostly hydrophobic, the binder has a hydrophobic surface to match (SAP=0.89/1, SAP_complex=0.39/1) which may affect its solubility, especially if expressed without the target protein.
 
 <img src='tutorial_chimerax_binder.png' width='700'>
 
@@ -328,3 +328,9 @@ sweep_params: # Parameters to sweep
         - 'A91,A115,A123'
         - 'A99,A123,A131'
 ```
+
+## References
+
+Croll TI, Smith BJ, Margetts MB, Whittaker J, Weiss MA, Ward CW, Lawrence MC. Higher-Resolution Structure of the Human Insulin Receptor Ectodomain: Multi-Modal Inclusion of the Insert Domain. Structure. 2016 Mar 1;24(3):469-76. doi: 10.1016/j.str.2015.12.014. Epub 2016 Feb 12. PMID: 26853939; PMCID: PMC4860004.
+
+Bertoni D. et al. AlphaFold Protein Structure Database 2025: a redesigned interface and updated structural coverage,  Nucleic Acids Research, Volume 54, Issue D1, 6 January 2026, Pages D358–D362, https://doi.org/10.1093/nar/gkaf1226
