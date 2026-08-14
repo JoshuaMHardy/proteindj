@@ -29,6 +29,7 @@ If you find ProteinDJ or BindSweeper useful in your research, please [cite us](h
 
 - [Installation](#install)
 - [Using ProteinDJ](#execution)
+- [Tutorial - De novo binder design](#tutorial)
 - [Advanced Parameters](#params)
 - [Filtering Designs](#params-filter)
 - [Metrics and Metadata](#metrics)
@@ -144,6 +145,10 @@ out_dir/
 ```
 
 > Tip: If your run gets interrupted you can resume from the last completed step by using the -resume flag e.g. `nextflow run main.nf -profile rfd_denovo_monomer -resume`
+
+### Tutorial - De novo Binder Design <a name="tutorial"></a>
+
+New to ProteinDJ? Follow our step-by-step [De novo Binder Design Tutorial](tutorial/tutorial_binderdesign.md) to design a binder against the insulin receptor.
 
 ## Advanced Parameters <a name="params"></a>
 
