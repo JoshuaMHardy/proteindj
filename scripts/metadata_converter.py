@@ -472,6 +472,7 @@ class FAMPNNMetadataConverter(MetadataConverter):
                 seq_id = None
             
             yield {
+                "description": design,
                 "fold_id": fold_id,
                 "seq_id": seq_id,
                 "sequence": sequence,
@@ -505,6 +506,7 @@ class MPNNMetadataConverter(MetadataConverter):
                 seq_id = None
             
             yield {
+                "description": design,
                 "fold_id": fold_id,
                 "seq_id": seq_id,
                 "sequence": sequence,

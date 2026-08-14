@@ -29,6 +29,7 @@ def calculate_seq_metrics(design, sequence_field):
         analysis = ProteinAnalysis(sequence)
         match = re.match(r'fold_(\d+)_seq_(\d+)', design)
         return {
+            'description': design,
             'fold_id': int(match.group(1)) if match else None,
             'seq_id': int(match.group(2)) if match else None,
             'seq_ext_coef': analysis.molar_extinction_coefficient()[0],

@@ -162,7 +162,7 @@ def align_structures(args):
                 out_json = {
                     "fold_id": fold_id,
                     "seq_id": seq_id,
-                    "description": boltz_path.name,
+                    "description": boltz_path.stem,
                     "boltz_rmsd_overall": round(data.get("boltz_rmsd_overall", rmsd_data.get("boltz_rmsd_overall", 0)), 2),
                     "boltz_rmsd_target": round(rmsd_data.get("boltz_rmsd_target", 0), 2),
                     "boltz_rmsd_binder": round(rmsd_data.get("boltz_rmsd_binder", 0), 2),
@@ -184,7 +184,7 @@ def align_structures(args):
                 out_json = {
                     "fold_id": fold_id,
                     "seq_id": seq_id,
-                    "description": boltz_path.name,
+                    "description": boltz_path.stem,
                     "boltz_unbound_rmsd": round(rmsd_data.get("boltz_unbound_rmsd", 0), 2),
                     "boltz_unbound_conf_score": round(data.get("confidence_score", 0), 3),
                     "boltz_unbound_ptm": round(data.get("ptm", 0), 3),
@@ -195,7 +195,7 @@ def align_structures(args):
                 out_json = {
                     "fold_id": fold_id,
                     "seq_id": seq_id,
-                    "description": boltz_path.name,
+                    "description": boltz_path.stem,
                     "boltz_rmsd_overall": round(data.get("boltz_rmsd_overall", rmsd_data.get("boltz_rmsd_overall", 0)), 2),
                     "boltz_conf_score": round(data.get("confidence_score", 0), 3),
                     "boltz_ptm": round(data.get("ptm", 0), 3),
