@@ -258,6 +258,10 @@ Sequence Filtering Parameters for ProteinMPNN and Full-Atom MPNN. Recommended to
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `mpnn_max_score`  | Maximum MPNN score (negative log likelihood). A lower score means ProteinMPNN is more confident in the sequence. |
 | `fampnn_max_psce` | Max PSCE score for designed side-chains. A lower score means FAMPNN is more confident in the sequence.           |
+| `seq_min_ext_coef`            | Minimum extinction coefficient at 280nm (M⁻¹cm⁻¹)                                             |
+| `seq_max_ext_coef`            | Maximum extinction coefficient at 280nm (M⁻¹cm⁻¹)                                             |
+| `seq_min_pi`                  | Minimum isoelectric point (pI) of the sequence                                                |
+| `seq_max_pi`                  | Maximum isoelectric point (pI) of the sequence                                                |
 
 ### AlphaFold2 Filtering Parameters
 
@@ -331,10 +335,6 @@ Analysis Filtering Parameters for the final Analysis stage using PDBFixer/OpenMM
 | `pr_max_surfhphobics`         | Maximum percentage of hydrophobic residues exposed on the surface                             |
 | `pr_max_sap`                  | Maximum mean residue Spatial Aggregation Propensity for monomer/binder (solubility prediction; lower is better) |
 | `pr_max_sap_complex`          | Maximum mean residue Spatial Aggregation Propensity for binder in complex (solubility prediction; lower is better) |
-| `seq_min_ext_coef`            | Minimum extinction coefficient at 280nm (M⁻¹cm⁻¹)                                             |
-| `seq_max_ext_coef`            | Maximum extinction coefficient at 280nm (M⁻¹cm⁻¹)                                             |
-| `seq_min_pi`                  | Minimum isoelectric point (pI) of the sequence                                                |
-| `seq_max_pi`                  | Maximum isoelectric point (pI) of the sequence                                                |
 
 ## Cluster Parameters
 
