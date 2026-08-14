@@ -29,7 +29,9 @@ Before you begin design binders, you need to prepare a target protein structure.
 
 Binder design algorithms scale exponentially with the size of your input, so it is common practice to trim structures down to the domain(s) of interest. Overcropping, especially when it leaves incomplete folds with exposed inner residues can lead to issues with structure prediction so there is a balance.
 
-For this example, we will be working with a structure of the insulin receptor (PDB: 4ZXB) in ChimeraX, although you can also use PyMOL. This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
+For this tutorial, we will be working with a structure of the insulin receptor (PDB: 4ZXB) in ChimeraX, although you can also use PyMOL. This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
+
+<img src='tutorial_chimerax_target.png' width='400'>
 
 However, this crystal structure has missing residues in domain 1. ProteinDJ will interpret the input like this E1-162/E168-172/E177-190 and will not fill in missing residues, treating the small E168-172 fragment as an isolated segment rather than a continuous part of the domain. These chain breaks can distort contig/hotspot placement and confuse structure prediction, particularly for such a short fragment. As described earlier, we can use structure prediction to complete our target structures and the AlphaFoldDB entry on human insulin receptor (https://alphafold.ebi.ac.uk/entry/AF-P06213-2-F1) is a good match (0.44 Calpha RMSD), so we will use this file instead. Note that this prediction includes the signal peptide (1-27) that is cleaved during expression, so domain 1 is 28-217.
 
@@ -56,6 +58,7 @@ Actions -> Atoms/Bonds -> Delete
 Upload/copy this file to your ProteinDJ project directory
 
 <img src='tutorial_chimerax_select.png' width='700'>
+
 <img src='tutorial_chimerax_save.png' width='400'>
 
 ### Choosing hotspots <a name="hotspots"></a>
@@ -97,7 +100,7 @@ test {
 }
 ```
 
-There is a hierachy for Nextflow with commandline parameters overriding profile values and profile values overriding the default values in the nextflow.config. In the above example, num_designs normally defaults 8 so this profile reduces the number to 4.
+There is a hierachy for Nextflow with commandline parameters overriding profile values and profile values overriding the default values in the nextflow.config. In the above example, num_designs normally defaults to 16 so this profile reduces the number to 4.
 
 We can create our own profile for the insulin receptor design either by adding a profile to nextflow.config or creating a new config file e.g.
 
@@ -163,10 +166,10 @@ fold_3_seq_1_boltzpred | 3 | 1 | 2 | 5 | 7 | 11.73 | 0.88 | 5960 | 81 | 8902 | 4
 By default, all filters are null – all designs will ‘pass’. For production runs, we need to provide cutoff values for our designs to filter out low confidence predictions. There are some example values in the example_filters profile (see below) that have been used as cutoff for binder design campaigns it is worth noting that this does not guarantee binding. Some targets are harder, and we can make compromises on filtering values otherwise the project has to be abandoned. As outlined in 'Target Preparation section' the input structure may not reflect the true protein structure/conformation, and structure prediction programs can be biased towards particular folds/complexes. Nevertheless, using these metrics to filter out bad designs has been shown to improve success rates even though some binder design campaigns still fail. 
 
 Types of prediction filters:
-RMSD/Alignment – e.g. binder_bndaln, binder_tgtaln
-Overall confidence e.g. plddt, ptm
-Interface confidence e.g. pae_interaction, iptm
-Biophysical metrics e.g. secondary structures, buried surface area, hydrogen bonds etc.
+- RMSD/Alignment – e.g. binder_bndaln, binder_tgtaln
+- Overall confidence e.g. plddt, ptm
+- Interface confidence e.g. pae_interaction, iptm
+- Biophysical metrics e.g. secondary structures, buried surface area, hydrogen bonds etc.
 
 Aside from structure prediction filters, there are other aspects of the workflow you can modulate. RFdiffusion can sometimes generate 1 or 2 helix designs, rather than folded binder domains. These have a high failure rate downstream and unless you are intentially designing peptides, it saves time filtering them out before sequence design and structure prediction. BoltzGen/BindCraft are less prone to this. 
 
