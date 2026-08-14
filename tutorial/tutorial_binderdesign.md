@@ -29,7 +29,7 @@ Before you begin design binders, you need to prepare a target protein structure.
 
 Binder design algorithms scale exponentially with the size of your input, so it is common practice to trim structures down to the domain(s) of interest. Overcropping, especially when it leaves incomplete folds with exposed inner residues can lead to issues with structure prediction so there is a balance.
 
-For this tutorial, we will be working with a structure of the insulin receptor (PDB: 4ZXB) in ChimeraX, although you can also use PyMOL. This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
+For this tutorial, we are starting with a crystal structure of the insulin receptor (PDB: 4ZXB). This structure has some of the issues highlighted above: missing residues and glycosylation sites, with many domains to choose from across the 768 residues. We can design binders against any of these domains, avoiding glycans and patching missing areas as needed. For the purposes of this tutorial we are interested in the first domain (E1-190). 
 
 <img src='tutorial_chimerax_target.png' width='400'>
 
