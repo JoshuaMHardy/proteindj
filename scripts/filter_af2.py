@@ -58,16 +58,15 @@ def read_data_from_directory(directory_path, pattern='*.json'):
                         print(f"Skipping empty file: {json_file}")
                         continue
                         
-                    # Check if the file contains one JSON object per line (JSONL)
-                    if file_content.startswith('[') or file_content.startswith('{'):
-                        # Single JSON object or array
+                    # Try parsing as a single JSON document (object or array) first
+                    try:
                         file_data = json.loads(file_content)
                         if isinstance(file_data, list):
                             data.extend(file_data)
                         else:
                             data.append(file_data)
-                    else:
-                        # JSONL format (one JSON object per line)
+                    except json.JSONDecodeError:
+                        # Fall back to JSONL (one JSON object per line)
                         for line in file_content.splitlines():
                             if line.strip():
                                 data.append(json.loads(line))
