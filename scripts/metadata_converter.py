@@ -152,6 +152,7 @@ class MetadataConverter:
             fold_only_count = 0
             for fold_id, fold_only_entry in metadata_fold_data.items():
                 if fold_id not in metadata_fold_ids:
+                    fold_only_count += 1
                     key = (fold_id, None)
                     # Add a description field with fold_id format
                     combined_entries[key] = {

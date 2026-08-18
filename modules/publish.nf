@@ -31,6 +31,7 @@ process PublishResults {
     path "filter_best_designs.log"
     path ("rank_designs.log"), optional: true
     path "success_metrics.json"
+    env FINAL_DESIGNS_COUNT, emit: final_designs_count
 
     script:
 
@@ -83,9 +84,15 @@ process PublishResults {
     // Check for placeholder
     if (final_pdbs_exist) {
         if (!params.run_fold_only){
-            println("* Final predictions after Analysis filtering: ${filter_analysis_count}")
-            if (params.rank_designs & (params.max_designs != null)){
+            println("* Predictions after Analysis filtering: ${filter_analysis_count}")
+            // max_seqs_per_fold is applied per-fold before max_designs, so the exact final
+            // count depends on the per-fold distribution and can't be known until ranking runs.
+            if (params.rank_designs && params.max_designs != null && params.max_seqs_per_fold != null){
+                println("* After Ranking, will output up to the best ${params.max_designs} designs (max ${params.max_seqs_per_fold} per fold)")
+            } else if (params.rank_designs && params.max_designs != null){
                 println("* After Ranking, will output the best ${params.max_designs} designs\n")
+            } else if (params.rank_designs && params.max_seqs_per_fold != null){
+                println("* After Ranking, will output up to ${filter_analysis_count} designs (max ${params.max_seqs_per_fold} per fold)\n")
             } else {
                 println("* After Ranking, will output all ${filter_analysis_count} designs\n")
             }
@@ -99,23 +106,9 @@ process PublishResults {
             --output-dir best_designs \
             2>&1 | tee filter_best_designs.log
 
-        # Generate success metrics JSON
-        python /scripts/generate_success_metrics.py \
-            --fold-count ${fold_count} \
-            --filter-fold-count ${filter_fold_count} \
-            --seq-count ${seq_count} \
-            --filter-seq-count ${filter_seq_count} \
-            --pred-count ${pred_count} \
-            --filter-pred-count ${filter_pred_count} \
-            --filter-analysis-count ${filter_analysis_count} \
-            --final-designs-count ${filter_analysis_count} \
-            --af2-count ${af2_count} \
-            --af2-filter-count ${af2_filter_count} \
-            --boltz-count ${boltz_count} \
-            --boltz-filter-count ${boltz_filter_count} \
-            --parameter-combination "${param_combo}" \
-            --output success_metrics.json
-            
+        # Default final count is everything in best_designs.csv; overridden below if ranking runs
+        FINAL_DESIGNS_COUNT=\$(( \$(wc -l < best_designs.csv) - 1 ))
+
         # Optionally rank designs
         if [ ${params.rank_designs} == 'true' ] ; then
             echo "Ranking designs by ${ranking_metric}"
@@ -128,6 +121,9 @@ process PublishResults {
                 ${params.max_designs ? "--max-designs ${params.max_designs}" : ""} \
                 ${params.max_seqs_per_fold ? "--max-seqs-per-fold ${params.max_seqs_per_fold}" : ""} \
                 2>&1 | tee rank_designs.log
+
+            # Ranking may drop designs (max_seqs_per_fold / max_designs), so re-derive the real count
+            FINAL_DESIGNS_COUNT=\$(( \$(wc -l < ranked_designs.csv) - 1 ))
             
             # Optionally compress ranked PDB files
             if [ ${params.zip_pdbs} == 'true' ] ; then
@@ -138,6 +134,25 @@ process PublishResults {
                 rm -rf ranked_designs
             fi
         fi
+
+        echo "Final designs kept after ranking: \${FINAL_DESIGNS_COUNT}"
+
+        # Generate success metrics JSON using the real post-ranking count
+        python /scripts/generate_success_metrics.py \
+            --fold-count ${fold_count} \
+            --filter-fold-count ${filter_fold_count} \
+            --seq-count ${seq_count} \
+            --filter-seq-count ${filter_seq_count} \
+            --pred-count ${pred_count} \
+            --filter-pred-count ${filter_pred_count} \
+            --filter-analysis-count ${filter_analysis_count} \
+            --final-designs-count \${FINAL_DESIGNS_COUNT} \
+            --af2-count ${af2_count} \
+            --af2-filter-count ${af2_filter_count} \
+            --boltz-count ${boltz_count} \
+            --boltz-filter-count ${boltz_filter_count} \
+            --parameter-combination "${param_combo}" \
+            --output success_metrics.json
         
         # Optionally compress best_designs PDB files
         if [ ${params.zip_pdbs} == 'true' ] ; then
@@ -153,6 +168,7 @@ process PublishResults {
         println("No designs survived filtering\n")
         """
         echo "No designs survived filtering" > filter_best_designs.log
+        FINAL_DESIGNS_COUNT=0
         
         # Generate success metrics JSON even for failed runs
         python /scripts/generate_success_metrics.py \

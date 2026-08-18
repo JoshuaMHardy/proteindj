@@ -127,8 +127,8 @@ def rank_designs(df, metric, max_seqs_per_fold=None):
             print("Warning: fold_id column not found, skipping max_seqs_per_fold filter", file=sys.stderr)
         else:
             # Group by fold_id and keep top N sequences per fold
-            df_filtered = df_sorted.groupby('fold_id', group_keys=False).apply(
-                lambda x: x.head(max_seqs_per_fold)
+            df_filtered = df_sorted.groupby('fold_id', group_keys=False).head(
+                max_seqs_per_fold
             ).reset_index(drop=True)
             
             original_count = len(df_sorted)

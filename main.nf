@@ -972,6 +972,10 @@ workflow {
         boltz_filter_count,
         is_binder_mode
     )
+
+    // Real post-ranking count, only known once rank_designs.py has actually run
+    PublishResults.out.final_designs_count
+        .view { count -> "* Final designs kept after ranking: ${count}" }
     
     // Save log file on completion
     workflow.onComplete {
