@@ -90,11 +90,11 @@ process PublishResults {
             if (params.rank_designs && params.max_designs != null && params.max_seqs_per_fold != null){
                 println("* After Ranking, will output up to the best ${params.max_designs} designs (max ${params.max_seqs_per_fold} per fold)")
             } else if (params.rank_designs && params.max_designs != null){
-                println("* After Ranking, will output the best ${params.max_designs} designs\n")
+                println("* After Ranking, will output the best ${params.max_designs} designs")
             } else if (params.rank_designs && params.max_seqs_per_fold != null){
-                println("* After Ranking, will output up to ${filter_analysis_count} designs (max ${params.max_seqs_per_fold} per fold)\n")
+                println("* After Ranking, will output up to ${filter_analysis_count} designs (max ${params.max_seqs_per_fold} per fold)")
             } else {
-                println("* After Ranking, will output all ${filter_analysis_count} designs\n")
+                println("* After Ranking, will output all ${filter_analysis_count} designs")
             }
         }
         """
