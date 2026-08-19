@@ -5,12 +5,12 @@ nextflow_process {
     process "Compress"
 
     // Compress just tars+gzips whatever files it's given under "<program>_results/" - use
-    // real rfd_raw fixture files (2 pdb + 2 json + 2 trb) as a representative payload.
+    // real rfd_output fixture files (2 pdb + 2 json + 2 trb) as a representative payload.
     test("Should tar.gz the given files under a program-named directory") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"
             }
             process {
                 """

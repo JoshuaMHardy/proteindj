@@ -4,18 +4,18 @@ nextflow_process {
     script "modules/boltz.nf"
     process "AnalyseBoltz"
 
-    // Real Boltz raw outputs from tier_b_binder/boltz_raw (confirmed pre-ipSAE/pDockQ
+    // Real Boltz raw outputs from tier_b_binder/boltz_output (confirmed pre-ipSAE/pDockQ
     // processing - input JSONs contain only base Boltz confidence metrics: ptm/iptm/
     // ligand_iptm/protein_iptm/complex_plddt/complex_iplddt/complex_pde/complex_ipde/
     // chains_ptm/pair_chains_iptm). AnalyseBoltz computes ipSAE/pDockQ/LIS interface
     // metrics from the PAE/pLDDT npz files + PDB structures and injects new keys into
-    // the output JSON files. Do NOT use tier_b_binder_af2boltz/boltz_raw here - those
+    // the output JSON files. Do NOT use tier_b_binder_af2boltz/boltz_output here - those
     // json files already have ipSAE/pDockQ baked in from a prior AnalyseBoltz run.
     test("Should compute ipSAE/pDockQ metrics and add them to confidence JSON files") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_output"
             }
             process {
                 """

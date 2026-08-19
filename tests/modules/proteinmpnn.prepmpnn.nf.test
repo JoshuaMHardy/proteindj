@@ -6,12 +6,12 @@ nextflow_process {
 
     // PrepMPNN adds "REMARK PDBinfo-LABEL: <resnum> FIXED" lines to RFD output PDBs so
     // ProteinMPNN keeps target/fixed residues unchanged during sequence design.
-    // Real fixtures: tier_b_binder/rfd_raw (2 designs, fold_0.pdb/json, fold_1.pdb/json).
+    // Real fixtures: tier_b_binder/rfd_output (2 designs, fold_0.pdb/json, fold_1.pdb/json).
     test("Should add FIXED remarks to RFD output PDBs") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"
             }
             process {
                 """

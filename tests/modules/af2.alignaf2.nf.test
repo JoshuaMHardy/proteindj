@@ -6,7 +6,7 @@ nextflow_process {
 
     // AlignAF2 rigid-body aligns each af2 prediction onto a reference PDB using chain B
     // (the target) CA atoms, then writes out the transformed structure. Real fixtures from
-    // tier_b_binder_af2boltz/af2_filtered (AF2 predictions) + tier_b_binder/fampnn_raw (a
+    // tier_b_binder_af2boltz/af2_filtered (AF2 predictions) + tier_b_binder/fampnn_output (a
     // FAMPNN design output, used as the reference since it retains the original target
     // chain B coordinates) - both have 115 chain-B CA atoms so alignment succeeds.
     test("Should align AF2 predictions onto the reference target chain") {
@@ -14,7 +14,7 @@ nextflow_process {
         when {
             params {
                 af2_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/af2_filtered"
-                reference_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_raw"
+                reference_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_output"
             }
             process {
                 """

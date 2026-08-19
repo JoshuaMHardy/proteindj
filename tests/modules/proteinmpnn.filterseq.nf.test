@@ -4,13 +4,13 @@ nextflow_process {
     script "modules/proteinmpnn.nf"
     process "FilterSeq"
 
-    // Real MPNN outputs from tier_b_binder/mpnn_raw: fold_0 score=1.02 (passes a max-score
+    // Real MPNN outputs from tier_b_binder/mpnn_output: fold_0 score=1.02 (passes a max-score
     // 1.1 threshold), fold_1 score=1.27 (fails it) - deterministic pass/fail split.
     test("Should keep only designs passing the max-score threshold") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/mpnn_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/mpnn_output"
                 seq_method = "mpnn"
             }
             process {

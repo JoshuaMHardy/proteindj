@@ -60,6 +60,67 @@ nextflow_function {
         }
     }
 
+    // Nextflow's CLI parser coerces bare-numeric params (e.g. --design_length 65) to Integer;
+    // validateDesignLength must coerce to String before splitting rather than fail on it.
+    test("validateDesignLength accepts an Integer value") {
+        function "Utils.validateDesignLength"
+        when {
+            function {
+                """
+                input[0] = 65
+                """
+            }
+        }
+        then {
+            assert function.success
+        }
+    }
+
+    test("designLengthContigRange expands a bare integer to N-N") {
+        function "Utils.designLengthContigRange"
+        when {
+            function {
+                """
+                input[0] = "65"
+                """
+            }
+        }
+        then {
+            assert function.success
+            assert function.result == "65-65"
+        }
+    }
+
+    test("designLengthContigRange expands a bare Integer to N-N") {
+        function "Utils.designLengthContigRange"
+        when {
+            function {
+                """
+                input[0] = 65
+                """
+            }
+        }
+        then {
+            assert function.success
+            assert function.result == "65-65"
+        }
+    }
+
+    test("designLengthContigRange passes through an existing range") {
+        function "Utils.designLengthContigRange"
+        when {
+            function {
+                """
+                input[0] = "65-150"
+                """
+            }
+        }
+        then {
+            assert function.success
+            assert function.result == "65-150"
+        }
+    }
+
     test("validateDesignLength throws on null") {
         function "Utils.validateDesignLength"
         when {

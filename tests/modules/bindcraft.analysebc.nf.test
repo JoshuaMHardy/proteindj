@@ -7,7 +7,7 @@ nextflow_process {
     // Real BindCraft outputs from batch_0 run: raw PDB+CSV files from RunBC that AnalyseBC
     // will process, swap chains A<->B, and assign new sequential fold IDs. Input is a
     // flattened mix of pdbs + csv (from RunBC's tuple output when staged).
-    // Real values cross-checked against bc_raw/batch_0.csv: fold_0 = batch_0_l64_s516555
+    // Real values cross-checked against bc_output/batch_0.csv: fold_0 = batch_0_l64_s516555
     // (Length=64, pLDDT=0.78, Target_RMSD=0.26, TrajectoryTime="0 hours, 6 minutes, 13
     // seconds" -> bc_time=373), fold_1 = batch_0_l93_s621777 (Length=93, pLDDT=0.95,
     // Target_RMSD=0.22, TrajectoryTime="0 hours, 8 minutes, 56 seconds" -> bc_time=536).
@@ -15,7 +15,7 @@ nextflow_process {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bc_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bc_output"
                 bc_fix_interface_residues = false
             }
             process {

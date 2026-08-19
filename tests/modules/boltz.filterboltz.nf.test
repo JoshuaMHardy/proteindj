@@ -4,7 +4,7 @@ nextflow_process {
     script "modules/boltz.nf"
     process "FilterBoltz"
 
-    // Real post-AnalyseBoltz predictions from tier_b_binder_af2boltz/boltz_raw (already has
+    // Real post-AnalyseBoltz predictions from tier_b_binder_af2boltz/boltz_output (already has
     // ipSAE_min baked in): fold_0 ipSAE_min=0.033846 (passes a 0.02 threshold), fold_1
     // ipSAE_min=0.013015 (fails it) - deterministic pass/fail split. unbound_json_files is
     // the lib/NO_FILE placeholder, matching how main.nf wires it when
@@ -13,7 +13,7 @@ nextflow_process {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/boltz_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/boltz_output"
             }
             process {
                 """

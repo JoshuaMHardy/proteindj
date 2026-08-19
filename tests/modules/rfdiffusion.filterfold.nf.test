@@ -4,14 +4,14 @@ nextflow_process {
     script "modules/rfdiffusion.nf"
     process "FilterFold"
 
-    // Real RFD backbone outputs from tier_b_binder/rfd_raw (fold_0, fold_1). filter_fold.py
+    // Real RFD backbone outputs from tier_b_binder/rfd_output (fold_0, fold_1). filter_fold.py
     // computes secondary-structure/RoG metrics itself via DSSP (not from the json), so a
     // loose threshold is used here as a smoke test that both designs pass through untouched.
     test("Should pass designs through a permissive SS/RoG filter") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"
             }
             process {
                 """

@@ -4,7 +4,7 @@ nextflow_process {
     script "modules/analysis.nf"
     process "AnalysePredictions"
 
-    // Real Boltz predictions from tier_b_monomer/boltz_raw (fold_0_seq_0_boltzpred,
+    // Real Boltz predictions from tier_b_monomer/boltz_output (fold_0_seq_0_boltzpred,
     // fold_1_seq_0_boltzpred) - these are the exact pre-relax inputs that produced the
     // reference outputs already captured in tier_b_monomer/analysis_jsonl/best_designs.jsonl
     // (pr_surfhphobics 11.3/38.8) and tier_b_monomer/analysis_relaxed/*.pdb, so real values
@@ -13,7 +13,7 @@ nextflow_process {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_monomer/boltz_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_monomer/boltz_output"
             }
             process {
                 """

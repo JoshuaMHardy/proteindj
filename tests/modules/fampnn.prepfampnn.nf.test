@@ -6,12 +6,12 @@ nextflow_process {
 
     // PrepFAMPNN takes RFD output (pdb+json pairs, since RFD backbones lack side-chains) and
     // restores missing side-chains + writes a CSV of fixed-residue ranges for FAMPNN.
-    // Real fixtures: tier_b_binder/rfd_raw (2 designs, fold_0.pdb/json, fold_1.pdb/json).
+    // Real fixtures: tier_b_binder/rfd_output (2 designs, fold_0.pdb/json, fold_1.pdb/json).
     test("Should restore side-chains and generate a fixed-residue CSV") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"
             }
             process {
                 """

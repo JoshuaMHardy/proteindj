@@ -8,7 +8,7 @@ nextflow_process {
     // writes a slimmed-down metadata JSON per fold/seq. align_boltz.py reads ipSAE/pDockQ
     // fields via data.get(..., default) so it tolerates a pre-AnalyseBoltz (raw) json fine -
     // those fields just default to 0. Real fixtures from the SAME pipeline run:
-    // tier_b_binder/boltz_raw (Boltz predictions) + tier_b_binder/fampnn_raw (binder designs
+    // tier_b_binder/boltz_output (Boltz predictions) + tier_b_binder/fampnn_output (binder designs
     // used as alignment reference) - confirmed matching chain A (binder: 68/63 CA atoms) and
     // chain B (target: 115/115 CA atoms) between the two fixture sets, which the 'binder'
     // design_type alignment path requires (it aligns target chains first, then binder chain A).
@@ -16,8 +16,8 @@ nextflow_process {
 
         when {
             params {
-                boltz_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_raw"
-                design_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_raw"
+                boltz_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_output"
+                design_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_output"
             }
             process {
                 """

@@ -7,13 +7,13 @@ nextflow_process {
     // PrepBoltz converts FAMPNN design PDBs into Boltz-2 YAML config files. In normal
     // bound-complex mode it includes all chains (binder A + target B), while binder-only
     // mode restricts to chain A for unbound predictions. Real fixtures from tier_b_binder/
-    // fampnn_raw (fold_0_seq_0.pdb, fold_1_seq_0.pdb) - FAMPNN design outputs with chains
+    // fampnn_output (fold_0_seq_0.pdb, fold_1_seq_0.pdb) - FAMPNN design outputs with chains
     // A (binder) and B (target).
     test("Should generate YAML configs with both binder and target chains in normal mode") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_output"
                 boltz_use_templates = false
                 boltz_input_msa = false
             }
@@ -50,7 +50,7 @@ nextflow_process {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_output"
                 boltz_use_templates = false
                 boltz_input_msa = false
             }

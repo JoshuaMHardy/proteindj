@@ -4,14 +4,14 @@ nextflow_process {
     script "modules/boltzgen.nf"
     process "AnalyseBG"
 
-    // Real BoltzGen outputs from tier_b_binder/bg_raw (2 designs: batch0_0.cif/npz,
+    // Real BoltzGen outputs from tier_b_binder/bg_output (2 designs: batch0_0.cif/npz,
     // batch0_1.cif/npz), design_mode='boltzgen_denovo' (confirmed via tier_b_binder/bg_processed
     // reference fixtures, which carry bg_design_mode: "boltzgen_denovo").
     test("Should convert BoltzGen cif/npz outputs to fold-numbered PDB/JSON pairs") {
 
         when {
             params {
-                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bg_raw"
+                fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bg_output"
             }
             process {
                 """
