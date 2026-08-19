@@ -161,15 +161,23 @@ def generate_contig_monomer_denovo(design_length=None):
     """
     Generate contig string for monomer rfd_denovo mode.
     Uses design_length exclusively if provided.
-    
-    Example: '[60]' or '[70-80]'
+
+    A single-value design_length (e.g. '60') is expanded to 'N-N' (e.g. '60-60') rather than
+    passed through bare: RFdiffusion's Hydra CLI parses an unquoted single-integer contig element
+    (e.g. contigmap.contigs=[60]) as an int rather than a string, which crashes contigs.py
+    (expects str.strip()/split()).
+
+    Example: '[60-60]' or '[70-80]'
     """
     if not design_length:
         raise ValueError(
             "design_length is required for monomer rfd_denovo mode. "
             "Provide a length (e.g., '60') or range (e.g., '70-80')"
         )
-    
+
+    if '-' not in design_length:
+        design_length = f"{design_length}-{design_length}"
+
     return f"[{design_length}]"
 
 
@@ -270,7 +278,7 @@ Design Modes (monomer vs binder notation is selected via --is_binder):
                                   Example: '[A1-77/0 B23-77/B80-105/0 60]'
   
   rfd_denovo, (monomer):           Design length only (de novo monomer design)
-                                  Example: '[60]' or '[70-80]'
+                                  Example: '[60-60]' or '[70-80]'
                                   Requires --design_length parameter
   
   rfd_partialdiff, (monomer):     Total residue count without chain IDs (partial diffusion)

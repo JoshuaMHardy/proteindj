@@ -157,7 +157,9 @@ class Utils {
         if (!design_length) {
             throw new IllegalArgumentException("Please provide a value for design_length, e.g. '65', '65-150'.")
         }
-        def designLengthVals = design_length.split('-')
+        // Nextflow's CLI parser coerces bare-numeric params (e.g. --design_length 65) to Integer,
+        // so coerce to String before splitting to support both String and Integer param values.
+        def designLengthVals = design_length.toString().split('-')
         if (designLengthVals.size() > 2 || !designLengthVals.every { it.isInteger() }) {
             throw new IllegalArgumentException("design_length parameter must contain one or two integers (dash-separated) e.g. '65' '65-150'.")
         }
@@ -169,4 +171,14 @@ class Utils {
             }
         }
     }
+
+    // Format design_length as an RFdiffusion contig length range 'N-M'. A single-value design_length
+    // (e.g. '65') is expanded to 'N-N' (e.g. '65-65') rather than passed through bare: RFdiffusion's
+    // Hydra CLI parses an unquoted single-integer contig element (e.g. contigmap.contigs=[65]) as an
+    // int rather than a string, which crashes contigs.py (expects str.strip()/split()).
+    static String designLengthContigRange(design_length) {
+        def str = design_length.toString()
+        return str.contains('-') ? str : "${str}-${str}"
+    }
+    
 }

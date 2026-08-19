@@ -131,7 +131,9 @@ def test_generate_contig_monomer_denovo_requires_design_length():
 
 
 def test_generate_contig_monomer_denovo_with_length():
-    assert generate_contig_monomer_denovo('60') == "[60]"
+    # Bare single-value design_length is expanded to 'N-N' so RFdiffusion's Hydra CLI parses the
+    # contig as a string rather than an int (see generate_contig_monomer_denovo docstring).
+    assert generate_contig_monomer_denovo('60') == "[60-60]"
     assert generate_contig_monomer_denovo('70-80') == "[70-80]"
 
 
@@ -158,7 +160,7 @@ def test_generate_contig_string_denovo_monomer_no_pdb_parse_needed(tmp_path, pdb
     # design_length-only monomer denovo path shouldn't need a valid pdb_file
     result = generate_contig_string('/nonexistent/path.pdb', design_mode='rfd_denovo',
                                      design_length='60', is_binder=False)
-    assert result == "[60]"
+    assert result == "[60-60]"
 
 
 def test_generate_contig_string_denovo_binder(tmp_path, pdb_atom_line):

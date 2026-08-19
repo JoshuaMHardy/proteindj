@@ -290,8 +290,9 @@ workflow {
                 println("Automatically generating RFdiffusion contigs from rfd_partialdiff_spec.")
                 Channel.value(RFDiffusionParams.AUTO_PARTIALDIFF_SENTINEL).set{rfdContigs}
             } else if (params.design_mode == 'rfd_denovo' && !is_binder_mode){
-                // Contigs for monomer rfd_denovo are equivalent to design_length
-                Channel.value("[$params.design_length]").set{rfdContigs}
+                // Contigs for monomer rfd_denovo are equivalent to design_length. Expand a bare
+                // single-value design_length (e.g. '65') to 'N-N'
+                Channel.value("[${Utils.designLengthContigRange(params.design_length)}]").set{rfdContigs}
             } else {
                 // Auto-generate contigs for RFdiffusion if not provided (rfd_denovo binder, or rfd_partialdiff monomer/binder without rfd_partialdiff_spec)
                 // Auto-generate contigs for RFdiffusion if not provided (rfd_denovo binder, or rfd_partialdiff monomer/binder without rfd_partialdiff_spec)
