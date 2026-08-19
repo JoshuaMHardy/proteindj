@@ -9,6 +9,8 @@ nextflow_process {
     // loose threshold is used here as a smoke test that both designs pass through untouched.
     test("Should pass designs through a permissive SS/RoG filter") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"

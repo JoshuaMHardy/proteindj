@@ -10,6 +10,8 @@ nextflow_process {
     // easily load torch tensors from Groovy assertions).
     test("Should generate target secondary-structure and adjacency tensor files") {
 
+        tag "cpu"
+
         when {
             process {
                 """

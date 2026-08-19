@@ -9,6 +9,8 @@ nextflow_process {
     // fold_1 has af2_iptm 0.204 (fails it) - gives a deterministic pass/fail split.
     test("Should keep only designs passing the af2-min-iptm threshold") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/af2_output"

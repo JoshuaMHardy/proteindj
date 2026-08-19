@@ -13,6 +13,8 @@ nextflow_process {
     // json files already have ipSAE/pDockQ baked in from a prior AnalyseBoltz run.
     test("Should compute ipSAE/pDockQ metrics and add them to confidence JSON files") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_output"

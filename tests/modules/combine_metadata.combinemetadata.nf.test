@@ -14,6 +14,8 @@ nextflow_process {
     // fields into the matching fold_id rows and write one combined CSV row per fold/seq.
     test("Should merge fold-only and fold+seq metadata into a combined CSV") {
 
+        tag "cpu"
+
         when {
             params {
                 fold_jsonl = "${projectDir}/tests/fixtures/tier_b_combine_metadata/metadata_fold.jsonl"

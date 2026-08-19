@@ -11,6 +11,8 @@ nextflow_process {
     // computed here (via PDBFixer/OpenMM relax + metric calculation) can be cross-checked.
     test("Should relax structures and compute per-design analysis metrics") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_monomer/boltz_output"

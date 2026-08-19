@@ -11,6 +11,8 @@ nextflow_process {
     // boltz_predict_unbound_binder=false.
     test("Should keep only designs passing the boltz-min-ipSAE-min threshold") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/boltz_output"

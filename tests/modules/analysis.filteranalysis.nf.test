@@ -9,6 +9,8 @@ nextflow_process {
     // a deterministic pass/fail split that exercises the filtering logic.
     test("Should keep only designs passing the pr-max-surfhphobics threshold") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_monomer"

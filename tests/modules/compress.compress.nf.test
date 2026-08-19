@@ -8,6 +8,8 @@ nextflow_process {
     // real rfd_output fixture files (2 pdb + 2 json + 2 trb) as a representative payload.
     test("Should tar.gz the given files under a program-named directory") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"

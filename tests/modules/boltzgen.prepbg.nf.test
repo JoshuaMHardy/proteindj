@@ -8,6 +8,8 @@ nextflow_process {
     // designs a standalone monomer and writes an empty "placeholder_boltzgen.pdb" file.
     test("Should generate a monomer design-spec YAML with no target") {
 
+        tag "cpu"
+
         when {
             params {
                 design_length = "80"
@@ -37,6 +39,8 @@ nextflow_process {
     // boltzgen_denovo mode with a target: designs a binder against benchmarkdata/5o45_pd-l1.pdb
     // (single chain A, residues 17-131), so the spec should have 2 entities (binder + target).
     test("Should generate a binder design-spec YAML against a target PDB") {
+
+        tag "cpu"
 
         when {
             params {

@@ -10,6 +10,8 @@ nextflow_process {
     // Fixture: 5o45_pd-l1.pdb is a single-chain (chain A) PD-L1 target structure.
     test("Should create BindCraft settings and modify advanced settings JSON") {
 
+        tag "cpu"
+
         when {
             params {
                 bc_chains = "A"
@@ -58,6 +60,8 @@ nextflow_process {
 
     // Auto-detection of chains when bc_chains is left empty
     test("Should auto-detect chain A when bc_chains is empty") {
+
+        tag "cpu"
 
         when {
             params {

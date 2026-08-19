@@ -13,6 +13,8 @@ nextflow_process {
     // Target_RMSD=0.22, TrajectoryTime="0 hours, 8 minutes, 56 seconds" -> bc_time=536).
     test("Should process BindCraft outputs and generate fold-numbered PDB/JSON pairs") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bc_output"

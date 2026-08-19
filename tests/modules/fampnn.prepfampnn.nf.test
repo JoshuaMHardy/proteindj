@@ -9,6 +9,8 @@ nextflow_process {
     // Real fixtures: tier_b_binder/rfd_output (2 designs, fold_0.pdb/json, fold_1.pdb/json).
     test("Should restore side-chains and generate a fixed-residue CSV") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/rfd_output"

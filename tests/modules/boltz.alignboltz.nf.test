@@ -14,6 +14,8 @@ nextflow_process {
     // design_type alignment path requires (it aligns target chains first, then binder chain A).
     test("Should align Boltz predictions to binder designs and compute RMSD/metadata") {
 
+        tag "cpu"
+
         when {
             params {
                 boltz_dir = "${projectDir}/tests/fixtures/tier_b_binder/boltz_output"

@@ -9,6 +9,8 @@ nextflow_process {
     // reference fixtures, which carry bg_design_mode: "boltzgen_denovo").
     test("Should convert BoltzGen cif/npz outputs to fold-numbered PDB/JSON pairs") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/bg_output"

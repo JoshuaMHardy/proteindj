@@ -11,6 +11,8 @@ nextflow_process {
     // superposition.
     test("Should merge designs onto the uncropped target and extend the target chain") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/fampnn_output"

@@ -8,6 +8,8 @@ nextflow_process {
     // 1.1 threshold), fold_1 score=1.27 (fails it) - deterministic pass/fail split.
     test("Should keep only designs passing the max-score threshold") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_binder/mpnn_output"

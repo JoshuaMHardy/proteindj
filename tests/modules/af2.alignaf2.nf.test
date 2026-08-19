@@ -11,6 +11,8 @@ nextflow_process {
     // chain B coordinates) - both have 115 chain-B CA atoms so alignment succeeds.
     test("Should align AF2 predictions onto the reference target chain") {
 
+        tag "cpu"
+
         when {
             params {
                 af2_dir = "${projectDir}/tests/fixtures/tier_b_binder_af2boltz/af2_filtered"

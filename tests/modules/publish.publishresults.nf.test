@@ -12,6 +12,8 @@ nextflow_process {
     // boltz_ptm column, since pred_method='boltz' + monomer mode defaults ranking to boltz_ptm).
     test("Should publish results, rank designs, and generate success metrics") {
 
+        tag "cpu"
+
         when {
             params {
                 fixtures_dir = "${projectDir}/tests/fixtures/tier_b_monomer/analysis_relaxed"
