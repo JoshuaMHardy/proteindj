@@ -58,9 +58,9 @@ BindSweeper works by:
 bindsweeper
 ```
 
-### Running on WEHI Systems
+### Running long jobs over SSH
 
-When running BindSweeper on WEHI systems, use `screen` to prevent disconnections during long-running jobs:
+When running BindSweeper over SSH or remote connections, use `screen` to prevent disconnections during long-running jobs:
 
 1. **Start a screen session**:
    ```bash
@@ -142,7 +142,7 @@ results_config:
 4. **`rfd_partialdiff`**: Partial diffusion binder design (RFdiffusion)
 5. **`bindcraft_denovo`**: De novo binder design (FreeBindCraft)
 6. **`boltzgen_denovo`**: De novo binder design (BoltzGen)
-7. **`boltzgen_motifscaff`**: Redesign of an existing binder's architecture/sequence/structure (BoltzGen)
+7. **`boltzgen_motifscaff`**: Motif scaffolding binder design (BoltzGen)
 
 ### Parameter Types
 

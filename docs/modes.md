@@ -33,8 +33,6 @@ If you want to test your binder designs in the context of a larger structure or 
 
 Each of the four RFdiffusion modes (`rfd_denovo`, `rfd_foldcond`, `rfd_motifscaff`, `rfd_partialdiff`) automatically runs as **monomer design** or **binder design** depending on whether a target `input_pdb` is provided (and, where relevant, whether the input PDB describes a single chain or multiple chains). You do not need to select monomer vs. binder explicitly - ProteinDJ detects this automatically at runtime. Contigs (RFdiffusion's internal residue-range specification) are now also generated automatically for you from your `input_pdb` and/or `design_length` - you never need to write them by hand. Your input PDB should only include the target residues you actually want RFdiffusion to build against; if you have missing loops or residues in your target, remove/exclude them from the PDB first (e.g. in ChimeraX/PyMOL), the same way you would prepare an input PDB for BindCraft or BoltzGen.
 
-<img src="../img/contigs.png" width="700">
-
 ### RFdiffusion De Novo Mode (rfd_denovo) <a name="mode-rfddenovo"></a>
 
 The simplest use of RFdiffusion is to generate a monomeric protein from noise, or a binder against a target protein.
@@ -153,7 +151,7 @@ Fold conditioning guides the RFdiffusion diffusion process by providing secondar
 
 <img src="../img/monomer_foldcond.png" width="400">
 
-To run fold conditioning you need a directory containing pytorch files (`rfd_foldcond_scaffold_dir`) with secondary structure and block adjacency information for each scaffold e.g. scaffold1_ss.pt scaffold2_adj.pt. You can generate these from a pdb or directory of pdbs using `scripts/create_scaffolds.py` (note this script requires a python environment with BioPython and pytorch installed). RFdiffusion will select a random scaffold from the directory for each design during the backbone diffusion process. Here we will use a directory of assorted scaffolds in `proteindj/binderscaffolds/scaffolds_assorted`. No `input_pdb` is provided, so this runs as monomer design.
+To run fold conditioning you need a directory containing pytorch files (`rfd_foldcond_scaffold_dir`) with secondary structure and block adjacency information for each scaffold e.g. scaffold1_ss.pt scaffold2_adj.pt. You can generate these from a pdb or directory of pdbs (see [Scaffold Generation Guide](../docs/scaffolds.md)). RFdiffusion will select a random scaffold from the directory for each design during the backbone diffusion process. Here we will use a directory of assorted scaffolds in `proteindj/binderscaffolds/scaffolds_assorted`. No `input_pdb` is provided, so this runs as monomer design.
 
 ```
 rfd_foldcond_monomer {

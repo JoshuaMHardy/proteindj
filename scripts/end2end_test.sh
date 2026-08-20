@@ -23,10 +23,14 @@ declare -a MODES=(
     "rfd_motifscaff_monomer"
     "rfd_partialdiff_monomer"
     "bindcraft_denovo"
+    "boltzgen_denovo_monomer"
+    "boltzgen_motifscaff_monomer"
     "rfd_denovo_binder"
     "rfd_foldcond_binder"
     "rfd_motifscaff_binder"
     "rfd_partialdiff_binder"
+    "boltzgen_denovo_binder"
+    "boltzgen_motifscaff_binder"
 )
 
 # Function to log with timestamp

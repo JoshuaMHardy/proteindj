@@ -10,9 +10,9 @@ ProteinDJ has three complementary test suites, from fastest/most granular to slo
 | nf-test unit | `tests/unit` | seconds | Groovy helper classes/functions (`lib/*.groovy`) - no containers, no GPU |
 | nf-test module (CPU) | `tests/modules` (tag `cpu`) | ~5-30s each | Real `python_tools.sif` container process wiring/logic, no GPU |
 | nf-test module (GPU) | `tests/modules` (tag `gpu`) | ~1-10 min each | Real GPU processes (RFdiffusion, ProteinMPNN, FAMPNN, AF2, Boltz, BindCraft, BoltzGen) |
-| `end2end_test.sh` | `scripts/end2end_test.sh` | ~40 min | Full pipeline, all 8 supported modes, on 4 A30 GPUs |
+| `end2end_test.sh` | `scripts/end2end_test.sh` | ~60 min | Full pipeline, all 13 supported modes, on 4 A30 GPUs |
 
-## Day-to-day workflow
+## Using the testing suite
 
 A [Makefile](../Makefile) at the repo root wraps the common commands:
 
@@ -32,11 +32,11 @@ nf-test test tests/modules/bindcraft.runbc.nf.test --tag gpu --profile milton
 
 ### Overview
 
-The `end2end_test.sh` script is a comprehensive testing framework for the ProteinDJ pipeline that automatically tests all supported pipeline modes and generates detailed reports. It helps ensure pipeline reliability and provides insights into the performance of different protein design modes. A full test takes ~40 minutes on 4 A30 GPUs.
+The `end2end_test.sh` script is a comprehensive testing framework for the ProteinDJ pipeline that automatically tests all supported pipeline modes and generates detailed reports. It helps ensure pipeline reliability and provides insights into the performance of different protein design modes. A full test takes an hour on 4 A30 GPUs.
 
 ### Features
 
-- ✅ **Automated Testing**: Tests all 8 pipeline modes automatically
+- ✅ **Automated Testing**: Tests all 13 pipeline modes automatically
 - 📊 **Comprehensive Reporting**: 
 
       - Generates detailed text reports
@@ -71,17 +71,21 @@ module load nextflow/24.10.5
 The script tests the following ProteinDJ pipeline profiles:
 
 #### Monomer Profiles
-- `rfd_denovo_monomer` - De novo protein design
-- `rfd_foldcond_monomer` - Conditional folding design
-- `rfd_motifscaff_monomer` - Motif-based scaffolding
-- `rfd_partialdiff_monomer` - Partial diffusion design
+- `rfd_denovo_monomer` - De novo protein design (RFdiffusion)
+- `rfd_foldcond_monomer` - Conditional folding design (RFdiffusion)
+- `rfd_motifscaff_monomer` - Motif-based scaffolding (RFdiffusion)
+- `rfd_partialdiff_monomer` - Partial diffusion design (RFdiffusion)
+- `boltzgen_denovo_monomer` - De novo protein design (BoltzGen)
+- `boltzgen_motifscaff_monomer` - Motif-based scaffolding (BoltzGen)
 
 #### Binder Profiles
 - `bindcraft_denovo` - De novo binder design (BindCraft)
 - `rfd_denovo_binder` - De novo binder design (RFdiffusion)
-- `rfd_foldcond_binder` - Conditional binder folding
-- `rfd_motifscaff_binder` - Binder motif scaffolding
-- `rfd_partialdiff_binder` - Partial diffusion binder design
+- `rfd_foldcond_binder` - Conditional binder folding (RFdiffusion)
+- `rfd_motifscaff_binder` - Binder motif scaffolding (RFdiffusion)
+- `rfd_partialdiff_binder` - Partial diffusion binder design (RFdiffusion)
+- `boltzgen_denovo_binder` - De novo binder design (BoltzGen)
+- `boltzgen_motifscaff_binder` - Binder motif scaffolding (BoltzGen)
 
 ### Command Line Arguments
 

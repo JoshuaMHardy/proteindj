@@ -19,7 +19,7 @@ Before starting, ensure you have:
 
 | Component   | Minimum                    | Recommended     |
 | ----------- | -------------------------- | --------------- |
-| **Storage** | 60 GB                      | 100 GB          |
+| **Storage** | 70 GB                      | 100 GB+         |
 | **RAM**     | 32 GB                      | 48 GB+          |
 | **GPU**     | NVIDIA GPU with 16GB+ VRAM | NVIDIA A30/A100 |
 | **CPU**     | 8 cores                    | 24+ cores       |
@@ -148,9 +148,8 @@ ProteinDJ only runs BoltzGen's design step (sequences are re-designed downstream
 ```bash
 mkdir -p models/boltzgen
 
-# These files are served from Hugging Face Hub's Xet storage backend. Plain wget/curl only
-# reach a slow single-connection compatibility bridge for Xet-backed files, so use the `hf`
-# CLI instead (fetches chunks in parallel, dramatically faster):
+# These files are served from Hugging Face Hub's Xet storage backend. Using wget/curl is
+# very slow so we recommend using the `hf` CLI instead (fetches chunks in parallel)
 pip install -U "huggingface_hub[hf_xet]"
 hf download boltzgen/boltzgen-1 boltzgen1_diverse.ckpt boltzgen1_adherence.ckpt --local-dir models/boltzgen
 hf download boltzgen/inference-data mols.zip --repo-type dataset --local-dir models/boltzgen
@@ -219,7 +218,7 @@ withLabel: 'BC' {
 
 We have provided a script for building the containers in a series of sbatch jobs (`apptainer/build_containers.sh`). You may need to tweak the SLURM parameters and enviroment settings for your cluster.
 
-> **⚠️ Important:** Container building requires significant resources and may take several hours.
+> **⚠️ Important:** Container building requires significant resources and may take several hours. We recommend using our pre-compiled containers unless you have reason to build your own.
 
 ### Option A: Automated Parallel Build using SLURM script
 
@@ -289,8 +288,10 @@ nano nextflow.config
 | Parameter       | Description                                 | Examples                       |
 | --------------- | ------------------------------------------- | ------------------------------ |
 | `rfd_models`    | Path to RFdiffusion models                  | `"${projectDir}/models/rfd"`   |
+| `mpnn_models`   | Path to ProteinMPNN models                  | `"${projectDir}/models/mpnn"`  |
 | `af2_models`    | Path to AlphaFold2 models                   | `"${projectDir}/models/af2"`   |
 | `boltz_models`  | Path to Boltz-2 models                      | `"${projectDir}/models/boltz"` |
+| `bg_models`     | Path to BoltzGen models                     | `"${projectDir}/models/boltzgen"` |
 | `gpu_model`     | Your GPU type                               | `'A30'`, `'V100'`, `'A100'`    |
 | `gpus`          | Number of GPUs to request                   | `1`, `2`, `4`, `8`             |
 | `cpus_per_gpu`  | Number of CPUs to request per GPU           | `8`, `12`                      |

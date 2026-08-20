@@ -35,7 +35,7 @@ If you find ProteinDJ or BindSweeper useful in your research, please [cite us](h
 - [Metrics and Metadata](#metrics)
 - [BindSweeper](#bindsweeper)
 - [Appendices](#append)
-  - [Known limitations and planned improvements](#limitations)
+  - [Known limitations](#limitations)
   - [Seqera Support](#seqera)
   - [Troubleshooting and common errors](#errors)
   - [Data used for benchmarking](#append-bench)
@@ -54,7 +54,7 @@ git clone https://github.com/PapenfussLab/proteindj
 cd proteindj
 ```
 
-Next, download the models for AF2, Boltz, ProteinMPNN and RFdiffusion (~11 GB) using the download script . This may take a while depending on your internet connection. Note that this only needs to be done once on a cluster as long as the files and containers are in a location that can be accessed by all users (see [Installation Guide](docs/installation.md) for more details):
+Next, download the models for AF2, Boltz, RFdiffusion etc. (~16 GB) using the download script . This may take a while depending on your internet connection. Note that this only needs to be done once on a cluster as long as the files and containers are in a location that can be accessed by all users (see [Installation Guide](docs/installation.md) for more details):
 
 ```
 bash scripts/download_models.sh
@@ -69,7 +69,7 @@ The ProteinDJ consists of four stages:
 1. Fold Design - Using RFdiffusion, BindCraft, or BoltzGen
 2. Sequence Design - Using ProteinMPNN or Full-Atom MPNN
 3. Structure Prediction - Using AlphaFold2 Initial Guess, Boltz-2, or both sequentially
-4. Analysis and Reporting - Using PDBFixer/OpenMM, arpeggia, PRODIGY, and BioPython
+4. Analysis and Reporting - Using a combination of tools including PDBFixer/OpenMM, arpeggia, PRODIGY, and BioPython
 
 <img src="img/pipelineoverview.png" height="200">
 
@@ -89,16 +89,19 @@ All the settings and parameters for ProteinDJ can be found in the `nextflow.conf
 
 | Parameter         | Example Value      | Description                                                                                                                                                                                     |
 | ----------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `design_mode`        | `'rfd_denovo'` | Pipeline mode. Choose from 'rfd_denovo', 'rfd_foldcond', 'rfd_motifscaff', 'rfd_partialdiff' (each automatically runs as monomer or binder design depending on whether `input_pdb` is provided), 'bindcraft_denovo', 'boltzgen_denovo', or 'boltzgen_motifscaff'. |
-| `num_designs` | `8`                | Number of designs to generate using RFdiffusion or Bindcraft.                                                                                                                                                |
+| `design_mode`        | `'rfd_denovo'` | Pipeline mode. Choose from 'rfd_denovo', 'rfd_foldcond', 'rfd_motifscaff', 'rfd_partialdiff', 'bindcraft_denovo', 'boltzgen_denovo', or 'boltzgen_motifscaff'. Each automatically runs as monomer or binder design depending on inputs. |
+| `num_designs` | `8`                | Number of designs to generate using BindCraft, BoltzGen, or RFdiffusion.                                                                                                                                                |
 | `seqs_per_design` | `8`                | Number of sequences to generate per design.                                                                                                                                         |
 | `out_dir`         | `'./pdj_results'`  | Output directory for results. Existing results in this directory will be overwritten.                                                                                                           |
 
-The [RFdiffusion GitHub](https://github.com/RosettaCommons/RFdiffusion/) has a comprehensive explanation of the different parameters available for RFdiffusion with examples. Note that we have externalised many RFdiffusion parameters to Nextflow and added the prefix 'rfd' e.g. `num_designs`, `input_pdb` etc. You can find a detailed description of all ProteinDJ parameters [here](docs/parameters.md).
+If a parameter has a prefix, it indicates that it is specific to an underlying program e.g. 'bg_' for BoltzGen. Other parameters are shared by multiple programs `input_pdb`, `hotspot_residues` etc. You can find a detailed description of all ProteinDJ parameters [here](docs/parameters.md).
 
-To launch a design campaign, simply run this command from the root of the `proteindj` repository:
+To launch a design campaign, launch the pipeline with `nextflow run main.nf` command from the root of the `proteindj` repository followed by the ProteinDJ parameters:
 
-`nextflow run main.nf`
+```
+# Example monomer design run
+nextflow run main.nf --design_mode boltzgen_denovo --num_designs 2 --seqs_per_design 1 --design_length 50 --out_dir pdj_monomer_example
+```
 
 This will launch the nextflow pipeline and show you progress in your terminal window. If you are running this over an ssh connection, you might want to use screen or tmux to avoid cancelling the process upon disconnect.
 
@@ -187,7 +190,7 @@ We recommend disabling other filters for small-scale and pilot experiments, and 
 - Severe clashes (clashes detected between C-alpha atoms)
 - Insufficient contact between binder and target (less than three residues contacting the target)
 
-If a design fails to meet these criteria, BindCraft will generate a new design until it finds one that passes. This can lead to long run times compared to RFdiffusion but tends to give binder designs that are more likely to succeed in the subsequent Structure Prediction stage.
+If a design fails to meet these criteria, BindCraft will generate a new design until it finds one that passes. This can lead to long run times compared to BoltzGen/RFdiffusion but tends to give binder designs that are more likely to succeed in the subsequent Structure Prediction stage.
 We have prepared a [Filtering Guide](docs/parameters.md/#filtering-parameters) on all the filters available in ProteinDJ with recommended values for each.
 
 ## Metrics and metadata <a name="metrics"></a>
@@ -202,7 +205,7 @@ BindSweeper is a python-based tool that can launch multiple instances of Protein
 
 ## Appendices <a name="append"></a>
 
-### Known limitations and planned improvements <a name="limitations"></a>
+### Known limitations <a name="limitations"></a>
 
 - Ligands / non-natural amino acids (e.g. PTMs) are not compatible with ProteinDJ
 
@@ -212,8 +215,6 @@ We have designed ProteinDJ to be compatible with the [Seqera platform](https://s
 
 ### Troubleshooting and common errors <a name="errors"></a>
 
-`AssertionError: ('B', 134) is not in pdb file!` - A mismatch between your contigs and the input PDB file. Likely due to a chain break or an incorrect chain ID.
-
 `KeyError: 'P1L'` - A non-standard amino acid code (e.g. P1L) is present in your input PDB and included in contigs. RFdiffusion only takes natural amino acids (i.e. 'ALA','ARG','ASN','ASP','CYS','GLN','GLU','GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER','THR','TRP','TYR','VAL') and unknown or masked amino acids ('UNK','MAS').
 
 `Unknown variable 'metadata_ch_fold'` - We are using topic channels for metadata, and this feature is only available in Nextflow v24.04 and above. This error occurs with earlier versions of Nextflow.
@@ -222,31 +223,27 @@ We have designed ProteinDJ to be compatible with the [Seqera platform](https://s
 
 We used five structures for testing and benchmarking our pipeline.
 
-| Protein           | PDB ID | Filename       | Contigs                                                | Hotspots           |
+| Protein           | PDB ID | Filename       | Domain boundaries                                                | Hotspots           |
 | ----------------- | ------ | -------------- | ------------------------------------------------------ | ------------------ |
-| Influenza A H1 HA | 5VLI   | 5vli_ha.pdb    | [A4-53/A79-83/A110-114/A261-325/0 B501-568/B580-670/0] | [B521, B545, B552] |
-| IL-7Rα            | 3DI3   | 3di3_il7ra.pdb | [B17-209/0]                                            | [B58, B80, B139]   |
-| InsR              | 4ZXB   | 4zxb_ir.pdb    | [E6-155/0]                                             | [E64, E88, E96]    |
-| PD-L1             | 5O45   | 5o45_pd-l1.pdb | [A17-131/0]                                            | [A56, A115, A123]  |
-| TrkA              | 1WWW   | 1www_trka.pdb  | [X282-382/0]                                           | [X294, X296, X333] |
+| Influenza A H1 HA | 5VLI   | 5vli_ha.pdb    | A4-53,A79-83,A110-114,A261-325,B501-568,B580-670 | B521,B545,B552 |
+| IL-7Rα            | 3DI3   | 3di3_il7ra.pdb | B17-209                                            | B58,B80,B139   |
+| InsR              | 4ZXB   | 4zxb_ir.pdb    | E6-150 |                                             E64,E88,E96    |
+| PD-L1             | 5O45   | 5o45_pd-l1.pdb | A17-131                                            | A56,A115,A123  |
+| TrkA              | 1WWW   | 1www_trka.pdb  | X282-382                                           | X294,X296,X333 |
 
 ### Citations for software packages used in ProteinDJ <a name="citations"></a>
 
 ProteinDJ - Silke, D., Iskander, J., Pan, J., Thompson, A.P., Papenfuss, A.T., Lucet, I.S., Hardy, J.M. ProteinDJ: a high-performance and modular protein design pipeline. Prot Sci (2026). https://doi.org/10.1002/pro.70464
 
+AlphaFold2 - Jumper, J., Evans, R., Pritzel, A. et al. Highly accurate protein structure prediction with AlphaFold. Nature 596, 583–589 (2021). https://doi.org/10.1038/s41586-021-03819-2
+
 AlphaFold2 Initial Guess and ProteinMPNN-FastRelax - Bennett, N.R., Coventry, B., Goreshnik, I. et al. Improving de novo protein binder design with deep learning. Nat Commun 14, 2625 (2023). https://doi.org/10.1038/s41467-023-38328-5
 
-AlphaFold2 - Jumper, J., Evans, R., Pritzel, A. et al. Highly accurate protein structure prediction with AlphaFold. Nature 596, 583–589 (2021). https://doi.org/10.1038/s41586-021-03819-2
+Arpeggia - Zhou, Y. Arpeggia: calculation of interatomic interactions in molecular structures. https://github.com/y1zhou/arpeggia
 
 BindCraft - Pacesa, M., Nickel, L., Schellhaas, C. et al. One-shot design of functional protein binders with BindCraft. Nature 646, 483-492 (2025). https://doi.org/10.1038/s41586-025-09429-6
 
 BioPython - Cock, P. J., Antao, T. et al. Biopython: freely available Python tools for computational molecular biology and bioinformatics. Bioinformatics 25, 1422-1423, (2009). https://doi.org/10.1093/bioinformatics/btp163
-
-Arpeggia - Zhou, Y. Arpeggia: calculation of interatomic interactions in molecular structures. https://github.com/y1zhou/arpeggia
-
-OpenMM and PDBFixer - Eastman, P., Swails, J., Chodera, J.D. et al. OpenMM 7: Rapid development of high performance algorithms for molecular dynamics. PLOS Comput Biol 13(7), e1005659 (2017). https://doi.org/10.1371/journal.pcbi.1005659
-
-PRODIGY - Xue, L.C., Rodrigues, J.P., Kastritis, P.L., Bonvin, A.M.J.J., Vangone, A. PRODIGY: a web server for predicting the binding affinity of protein-protein complexes. Bioinformatics 32(23), 3676-3678 (2016). https://doi.org/10.1093/bioinformatics/btw514
 
 Boltz-2 - Wohlwend, J., et al. Boltz-2 Democratizing Biomolecular Interaction Modeling, bioRxiv 2024.11.19.624167 (2024). https://doi.org/10.1101/2024.11.19.624167
 
@@ -254,8 +251,11 @@ Full-Atom MPNN - Shuai, R.W., et al. Sidechain conditioning and modeling for ful
 
 HyperMPNN - Ertelt, M., Schlegel, P., Beining, M. et al. HyperMPNN-A general strategy to design thermostable proteins learned from hyperthermophiles. bioRxiv (2024) https://doi.org/10.1101/2024.11.26.625397
 
-RFdiffusion - Watson, J.L., Juergens, D., Bennett, N.R. et al. De novo design of protein structure and function with RFdiffusion. Nature 620, 1089–1100 (2023). https://doi.org/10.1038/s41586-023-06415-8
+iPSAE score scripts - Digital Biotechnology Lab. (2025). Overath, M. D., Rygaard, A., Jacobsen, C. P., Brasas, V., Morell, O., Sormanni, P., & Jenkins, T. P. (2025). Predicting Experimental Success in De Novo Binder Design: A Meta-Analysis of 3,766 Experimentally Characterised Binders. bioRxiv. https://doi.org/10.1101/2025.08.14.670059v1
 
+OpenMM and PDBFixer - Eastman, P., Swails, J., Chodera, J.D. et al. OpenMM 7: Rapid development of high performance algorithms for molecular dynamics. PLOS Comput Biol 13(7), e1005659 (2017). https://doi.org/10.1371/journal.pcbi.1005659
+
+PRODIGY - Xue, L.C., Rodrigues, J.P., Kastritis, P.L., Bonvin, A.M.J.J., Vangone, A. PRODIGY: a web server for predicting the binding affinity of protein-protein complexes. Bioinformatics 32(23), 3676-3678 (2016). https://doi.org/10.1093/bioinformatics/btw514
 ProteinMPNN - Dauparas, J., et al. Robust deep learning–based protein sequence design using ProteinMPNN. Science 378, 49-56 (2022). https://doi.org/10.1126/science.add2187
 
-iPSAE score scripts - Digital Biotechnology Lab. (2025). Overath, M. D., Rygaard, A., Jacobsen, C. P., Brasas, V., Morell, O., Sormanni, P., & Jenkins, T. P. (2025). Predicting Experimental Success in De Novo Binder Design: A Meta-Analysis of 3,766 Experimentally Characterised Binders. bioRxiv. https://doi.org/10.1101/2025.08.14.670059v1
+RFdiffusion - Watson, J.L., Juergens, D., Bennett, N.R. et al. De novo design of protein structure and function with RFdiffusion. Nature 620, 1089–1100 (2023). https://doi.org/10.1038/s41586-023-06415-8
