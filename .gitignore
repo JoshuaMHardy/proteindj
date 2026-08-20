@@ -6,6 +6,7 @@ work
 pdj_results/
 models/
 test/
+projects/
 .nf-test*
 
 # Bindsweeper

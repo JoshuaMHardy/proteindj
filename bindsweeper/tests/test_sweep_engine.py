@@ -121,7 +121,7 @@ class TestSweepEngine:
         assert combo.swept_params["models"] == "default"
 
     def test_generate_combinations_no_sweep_params(self, temp_dir, config_files):
-        """Test generating combinations with no sweep parameters."""
+        """Test generating combinations with no sweep parameters produces a single fixed-params run."""
         config = Mock(spec=SweepConfig)
         config.mode = "denovo"
         config.fixed_params = {"num_designs": 4}
@@ -132,7 +132,9 @@ class TestSweepEngine:
         engine = SweepEngine(config, temp_dir, config_files["nextflow_config"])
 
         combinations = engine.generate_combinations()
-        assert len(combinations) == 0
+        assert len(combinations) == 1
+        assert combinations[0].swept_params == {}
+        assert combinations[0].all_params == config.fixed_params
 
     def test_generate_output_dir(self, sweep_engine):
         """Test output directory generation."""
