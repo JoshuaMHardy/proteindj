@@ -247,6 +247,8 @@ BioPython - Cock, P. J., Antao, T. et al. Biopython: freely available Python too
 
 Boltz-2 - Wohlwend, J., et al. Boltz-2 Democratizing Biomolecular Interaction Modeling, bioRxiv 2024.11.19.624167 (2024). https://doi.org/10.1101/2024.11.19.624167
 
+BoltzGen - Stark, H., Faltings, F., Choi, M. et al. BoltzGen: Toward Universal Binder Design, bioRxiv 2025.11.20.689494 (2025). https://www.biorxiv.org/content/10.1101/2025.11.20.689494v2
+
 Full-Atom MPNN - Shuai, R.W., et al. Sidechain conditioning and modeling for full-atom protein sequence design with FAMPNN, bioRxiv 2025.02.13.637498 (2025). https://doi.org/10.1101/2025.02.13.637498
 
 HyperMPNN - Ertelt, M., Schlegel, P., Beining, M. et al. HyperMPNN-A general strategy to design thermostable proteins learned from hyperthermophiles. bioRxiv (2024) https://doi.org/10.1101/2024.11.26.625397
