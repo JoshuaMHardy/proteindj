@@ -1,13 +1,6 @@
-mode: boltzgen_denovo #design mode
-profile: example_filters,milton,test #Profiles that you are using in nextflow.config
-
-fixed_params: # Parameters used for every run
-  design_length: '60-150' 
-  input_pdb: 'tutorial/tutorial.pdb'
-  bg_not_binding_residues: 'A43'
-
-sweep_params: # Parameters to sweep
-  hotspot_residues:
-    values:
-      - null
-      - 'A91,A115,A123'
+design_mode: 'boltzgen_denovo'
+input_pdb: 'tutorial/tutorial.pdb'
+hotspot_residues: 'A91,A115,A123'
+bg_not_binding_residues: 'A43'
+design_length: '60-150'
+out_dir: 'tutorial_test'

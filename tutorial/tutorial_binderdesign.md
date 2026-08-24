@@ -102,31 +102,25 @@ test {
 
 There is a hierachy for Nextflow with commandline parameters overriding profile values and profile values overriding the default values in the nextflow.config. In the above example, num_designs normally defaults to 16 so this profile reduces the number to 4.
 
-We can create our own profile for the insulin receptor design either by adding a profile to nextflow.config or creating a new config file e.g.
+Rather than repeating these target-specific values on the command line, we can put them in a Nextflow params file. We keep profiles for execution environments and stable presets such as `slurm`, `apptainer`, `test`, and `example_filters`; parameters specific to this target and run belong in the params file.
 
-tutorial.config
-```groovy
-profiles {
-    insulinreceptor {
-        params {
-            design_mode = 'boltzgen_denovo'
-            input_pdb = 'tutorial/tutorial.pdb'
-            hotspot_residues = 'A91,A115,A123'
-            bg_not_binding_residues = 'A43'
-            design_length = '60-150'
-            out_dir = 'tutorial_test'
-        }
-    }
-}
+tutorial/tutorial.yaml
+```yaml
+design_mode: 'boltzgen_denovo'
+input_pdb: 'tutorial/tutorial.pdb'
+hotspot_residues: 'A91,A115,A123'
+bg_not_binding_residues: 'A43'
+design_length: '60-150'
+out_dir: 'tutorial_test'
 ```
 
-Then rather than providing these values as commandline parameters, we pass the profile name to Nextflow along with the name of the config file. Nextflow will look for matching profile names in both nextflow.config and any config files that are named on launch. This command is identical to the test we ran above:
+Pass this file to Nextflow with `-params-file`. This command is equivalent to the short test we ran above:
 
 ```shell
-nextflow run main.nf -profile test,insulinreceptor -config tutorial/tutorial.config
+nextflow run main.nf -profile test -params-file tutorial/tutorial.yaml
 ```
 
-In this way you can mix and match multiple profiles together i.e. a profile with your favourite settings for binder design and your target-specific parameters.
+This keeps the biological inputs separate from the Nextflow profiles and makes it clear which settings belong to this design. Command-line parameters can still be used to override individual values for a particular run.
 
 ## Understanding the output and metrics <a name="output-metrics"></a>
 
@@ -203,10 +197,10 @@ Now that we have completed a test run, and checked our outputs are what we inten
 
 Previously we used the test profile. If we omit this profile, the default values in nextflow.config will be used: 16 folds * 8 sequences = 128 designs total. This is a good number for testing a hotspot, to find something with a hit rate of > 1% within an hour, depending on how many GPUs you have access to. It also allows us to test our filtering values and adjust them if needed.
 
-We will use our config file (tutorial config) and the profile we made 'insulinreceptor', with the 'example_filters' profile in nextflow.config. This took about 20-25 minutes on 4 A30 GPUs.
+We will use our params file with the `example_filters` profile from `nextflow.config`. This took about 20-25 minutes on 4 A30 GPUs.
 
 ```shell
-nextflow run main.nf -profile example_filters,insulinreceptor -config tutorial/tutorial.config
+nextflow run main.nf -profile example_filters -params-file tutorial/tutorial.yaml
 ```
 
 Looking at the summary, all folds passed but of the 16*8=128 sequences, only 109 had an extinction coefficient of > 1000, and only 28 of those passed structure prediction filters. 
@@ -225,16 +219,16 @@ Pipeline results summary:
 
 If you don't see any designs pass, consider trying different hotspots, fold design programs (BindCraft/RFdiffusion) or adjusting filters if you see near misses. Before trying 1000s of designs which could take several days to complete you can try doubling or tripling the designs instead. If your project is restricted to a very specific hotspot and your success rate is low then you have no choice but to run larger numbers of designs.
 
-To increase the number of designs, you add the num_designs parameter to your config file or can pass it via the commandline. Numbers that split evenly over your GPUs are the most efficient:
+To increase the number of designs, add `num_designs` to the params file or pass it on the command line. Numbers that split evenly over your GPUs are the most efficient:
 
 ```shell
-nextflow run main.nf -profile example_filters,insulinreceptor -config tutorial/tutorial.config --num_designs 64
+nextflow run main.nf -profile example_filters -params-file tutorial/tutorial.yaml --num_designs 64
 ```
 
 If running ProteinDJ from the commandline, you must ensure that your launch process is not interrupted as it coordinates the internal processes. We recommend using screen/tmux to allow Nextflow to run in a subshell. If you get disconnected, you can use the '-resume' option with Nextflow to load cached results. A process must fully complete for the cache to be valid.
 
 ```shell
-nextflow run main.nf -profile example_filters,insulinreceptor -config tutorial/tutorial.config -resume
+nextflow run main.nf -profile example_filters -params-file tutorial/tutorial.yaml -resume
 ```
 
 ## Ranking designs <a name="ranking"></a>
@@ -254,7 +248,7 @@ Here is an example of a highly confident binder (ipSAE=0.734, pae_interaction=4.
 One of the advantages of ProteinDJ is that there are multiple software available for binder design. If you want to try BindCraft, it is as easy as changing the design mode to 'bindcraft_denovo' (or 'rfd_denovo' for RFdiffusion) and it will use the same hotspots and input PDB as for BoltzGen. Make sure to change the output directory to prevent your previous results being overwritten.
 
 ```
-nextflow run main.nf -profile example_filters,insulinreceptor -config tutorial/tutorial.config --design_mode='bindcraft_denovo' --out_dir='tutorial_bindcraft'
+nextflow run main.nf -profile example_filters -params-file tutorial/tutorial.yaml --design_mode 'bindcraft_denovo' --out_dir 'tutorial_bindcraft'
 ```
 
 Each software has advantages and disadvantages. RFdiffusion is as fast as BoltzGen but has a tendency for helical binders, partially fixed by using the checkpoint override (rfd_ckpt_override='complex_beta'). BindCraft has a higher success rate for structure prediction than RFdiffusion due to its iterative design cycle, but takes much longer than RFdiffusion/BoltzGen to generate each fold. BoltzGen is the newest of the three and can generate a higher diversity of folds, incorporating more beta-sheets than RFdiffusion, and also has the option to provide anti-hotspots (bg_not_binding_residues), helping restrict the design to interacting with your intended site.
@@ -273,11 +267,11 @@ Any RMSD calculations that include the flexible regions of the target will natur
 
 ## BindSweeper <a name="bindsweeper"></a>
 
-After running a few individual ProteinDJ jobs, we would encourage you to explore BindSweeper (see [bindsweeper.md](../docs/bindsweeper.md) for installation instructions). BindSweeper is a tool designed for power users, it is a python wrapper around ProteinDJ that allows parallel execution of different parameters and reports the success rates of each combination. The input is a yaml file structure that contains a 'fixed_params' section, that remain constant, and a 'sweep_params' section.
+After running a few individual ProteinDJ jobs, we would encourage you to explore BindSweeper (see [bindsweeper.md](../docs/bindsweeper.md) for installation instructions). BindSweeper is a tool designed for power users, it is a python wrapper around ProteinDJ that allows parallel execution of different parameters and reports the success rates of each combination. Its YAML format is similar to a Nextflow params file, but adds a `mode`, an optional `profile`, and separate `fixed_params` and `sweep_params` sections. Use a separate file because this structure is interpreted by BindSweeper rather than passed directly to Nextflow.
 
 For example, you could test with or without hotspots with a yaml file like this:
 
-tutorial.yaml
+tutorial/tutorial_sweep.yaml
 ```yaml
 mode: boltzgen_denovo #design mode
 profile: example_filters #Profiles that you are using in nextflow.config
@@ -296,7 +290,7 @@ sweep_params: # Parameters to sweep
 
 Then point bindsweeper to the yaml file and provide an output path. This will launch two ProteinDJ jobs in parallel
 ```shell
-bindsweeper --config tutorial/tutorial.yaml --output-dir bindsweeper_tutorial/
+bindsweeper --config tutorial/tutorial_sweep.yaml --output-dir bindsweeper_tutorial/
 ```
 
 You can of course add more hotspots the list, but you can also add additional parameters and Bindsweeper will create a matrix sweep testing all combinations. For example, if we had two different versions of a protein structure, maybe from different structure prediction programs, we can provide them both e.g.
