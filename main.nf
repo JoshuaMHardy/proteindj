@@ -125,7 +125,10 @@ workflow {
             }
         }
         // Validate design length
-        if (params.design_mode in ['bindcraft_denovo','binder_denovo', 'monomer_denovo']){
+        // For binder_denovo and monomer_denovo, skip validation when rfd_contigs is provided as it contains the design length
+        if (params.design_mode == 'bindcraft_denovo'){
+            validateDesignLength(params.design_length)
+        } else if (params.design_mode in ['binder_denovo', 'monomer_denovo'] && !params.rfd_contigs){
             validateDesignLength(params.design_length)
         }
         
@@ -330,19 +333,21 @@ workflow {
             
             // Method specific batching
             if (params.mpnn_relax_max_cycles > 0) {
-                // use smaller batches for fast relax (slow)
+                // use smaller batches for fast relax (slow) - 1 PDB per batch
                 PrepMPNN.out.pdbs
-                    .collect()
                     .flatten()
-                    .buffer( size: 2, remainder: true )
+                    .collate(1)
+                    .toList()
+                    .flatMap { list -> list.withIndex().collect { item, idx -> [idx, item] } }
                     .set { seq_input_pdbs }
             }
             else {
                 // use larger batches without fast relax
                 PrepMPNN.out.pdbs
-                    .collect()
                     .flatten()
-                    .buffer( size: 10, remainder: true )
+                    .collate(10)
+                    .toList()
+                    .flatMap { list -> list.withIndex().collect { item, idx -> [idx, item] } }
                     .set { seq_input_pdbs }
             }
 
@@ -822,7 +827,7 @@ def collectInputFiles(params) {
         }
     }
 
-    if(params.design_mode == 'bindcraft_denovo' & params.bc_advanced_json){
+    if(params.design_mode == 'bindcraft_denovo' && params.bc_advanced_json){
         inputs << file(params.bc_advanced_json)
     }
 
