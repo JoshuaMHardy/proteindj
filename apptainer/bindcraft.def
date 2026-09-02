@@ -46,7 +46,7 @@ From: nvidia/cuda:12.8.0-base-ubuntu24.04
     pip install freesasa
 
     # Clone FreeBindCraft repository and checkout the requested revision
-    git clone --depth 1 https://github.com/PapenfussLab/FreeBindCraft.git /opt/BindCraft \
+    git clone https://github.com/PapenfussLab/FreeBindCraft.git /opt/BindCraft \
     && git -C /opt/BindCraft checkout 7a202e2
     cd /opt/BindCraft
     
