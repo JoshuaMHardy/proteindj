@@ -219,6 +219,8 @@ We have designed ProteinDJ to be compatible with the [Seqera platform](https://s
 
 `Unknown variable 'metadata_ch_fold'` - We are using topic channels for metadata, and this feature is only available in Nextflow v24.04 and above. This error occurs with earlier versions of Nextflow.
 
+`FATAL:   While pulling image from oci registry: error fetching image to cache: unable to Download Image: error writing layer: stream error: stream ID 1; PROTOCOL_ERROR; received from peer` - Downloading large containers can sometimes fail from the GitHub Container Registry (GHCR), due to timeout or protocol errors. Try increasing `apptainer.pullTimeout` in nextflow.config or changing protocol e.g. `export GODEBUG=http2client=0`
+
 ### Data used for benchmarking <a name="append-bench"></a>
 
 We used five structures for testing and benchmarking our pipeline.
