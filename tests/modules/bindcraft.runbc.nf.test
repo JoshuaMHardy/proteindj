@@ -21,7 +21,7 @@ nextflow_process {
                     input[0] = 1
                     input[1] = 1
                     input[2] = file("${projectDir}/benchmarkdata/5o45_pd-l1.pdb", checkIfExists: true)
-                    input[3] = file("${projectDir}/mod-bindcraft/settings_advanced/default_4stage_multimer.json", checkIfExists: true)
+                    input[3] = file("${projectDir}/lib/bindcraft/settings_advanced/default_4stage_multimer.json", checkIfExists: true)
                     """
                 }
                 params {
