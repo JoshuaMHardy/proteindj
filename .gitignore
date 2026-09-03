@@ -1,6 +1,5 @@
 .nextflow/*
 .nextflow.log*
-.github
 .vscode
 pdj_results/
 models/
