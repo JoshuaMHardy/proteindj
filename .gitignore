@@ -28,3 +28,5 @@ bindsweeper/**/.nextflow/**
 *.sif
 **/__pycache__/
 *.tar
+
+slurm-*.out
