@@ -68,7 +68,7 @@ RUN pip install \
         pandas && \
     pip install -e /app/fampnn
 
-ENV PYTHONPATH="/app/fampnn:$PYTHONPATH"
+ENV PYTHONPATH="/app/fampnn"
 
 WORKDIR /app/fampnn
 ENTRYPOINT ["/bin/bash", "-c", "exec \"$@\"", "--"]

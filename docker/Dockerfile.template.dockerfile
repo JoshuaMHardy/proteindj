@@ -61,7 +61,7 @@ RUN pip install \
         <SHARED_PIP_PACKAGES> && \
     pip install -e <APP_DIR>
 
-ENV PYTHONPATH="<APP_DIR>:$PYTHONPATH"
+ENV PYTHONPATH="<APP_DIR>"
 
 WORKDIR <APP_DIR>
 ENTRYPOINT ["/bin/bash", "-c", "exec \"$@\"", "--"]
