@@ -1,5 +1,5 @@
 variable "REGISTRY" {
-  default = "ghcr.io/papenfusslab"
+  default = "ghcr.io/joshuamhardy" #Change to papenfusslab when deploying
 }
 
 variable "VERSION" {
