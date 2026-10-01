@@ -7,7 +7,7 @@ Usage:
 Updates:
   - nextflow.config          manifest.version (full)  and  params.container_version (major.minor, prefixed v)
   - bindsweeper/pyproject.toml  version (full)
-  - apptainer/*.def          %labels Version (major.minor, no prefix)
+  - docker/docker-bake.hcl   VERSION variable (major.minor, prefixed v)
 """
 
 import re
@@ -91,17 +91,16 @@ def main() -> None:
     if changed:
         print(f"  bindsweeper version → \"{new_full}\"")
 
-    # ── apptainer/*.def ────────────────────────────────────────────────────────
-    def_files = sorted((root / "apptainer").glob("*.def"))
-    print(f"\n[apptainer/*.def]  (label Version → {new_major_minor})")
-    for def_file in def_files:
-        changed = replace_in_file(
-            def_file,
-            r"(^[ \t]*Version\s+)\S+",
-            rf"\g<1>{new_major_minor}",
-        )
-        if changed:
-            print(f"  {def_file.name}")
+    # ── docker/docker-bake.hcl ──────────────────────────────────────────────────
+    bake_file = root / "docker" / "docker-bake.hcl"
+    print(f"\n[docker/docker-bake.hcl]")
+    changed = replace_in_file(
+        bake_file,
+        r'(variable "VERSION" \{\n\s*default = ")[^"]*(")',
+        rf"\g<1>{new_container_version}\g<2>",
+    )
+    if changed:
+        print(f'  VERSION → "{new_container_version}"')
 
     print(f"\nDone. All files updated to {new_full}.")
 

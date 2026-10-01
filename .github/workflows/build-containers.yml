@@ -1,0 +1,103 @@
+name: Build containers
+
+on:
+  push:
+    branches: [containerrebuild] #change this to the branch you want to trigger the workflow on
+    paths:
+      - "docker/**"
+      - ".github/workflows/build-containers.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # Figures out which tool(s) actually changed, so a Dockerfile edit only rebuilds its own images.
+  changes:
+    name: Detect changed containers
+    runs-on: ubuntu-24.04
+    outputs:
+      bindcraft: ${{ steps.filter.outputs.bindcraft }}
+      fampnn: ${{ steps.filter.outputs.fampnn }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # docker-bake.hcl holds shared tags/args, so treat it as a dependency of every tool.
+          filters: |
+            bindcraft:
+              - 'docker/Dockerfile.bindcraft.dockerfile'
+              - 'docker/docker-bake.hcl'
+            fampnn:
+              - 'docker/Dockerfile.fampnn.dockerfile'
+              - 'docker/docker-bake.hcl'
+
+  build-bindcraft:
+    name: build (${{ matrix.target }})
+    needs: changes
+    if: needs.changes.outputs.bindcraft == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      # One bake target per job so each backend gets its own runner disk/log.
+      matrix:
+        target: [bindcraft-cuda, bindcraft-rocm]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.target }}
+        uses: docker/bake-action@v5
+        with:
+          workdir: docker
+          targets: ${{ matrix.target }}
+          push: true
+          set: |
+            *.cache-from=type=gha,scope=${{ matrix.target }}
+            *.cache-to=type=gha,mode=max,scope=${{ matrix.target }}
+
+  build-fampnn:
+    name: build (${{ matrix.target }})
+    needs: changes
+    if: needs.changes.outputs.fampnn == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      # One bake target per job so each backend gets its own runner disk/log.
+      matrix:
+        target: [fampnn-cuda, fampnn-rocm]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.target }}
+        uses: docker/bake-action@v5
+        with:
+          workdir: docker
+          targets: ${{ matrix.target }}
+          push: true
+          set: |
+            *.cache-from=type=gha,scope=${{ matrix.target }}
+            *.cache-to=type=gha,mode=max,scope=${{ matrix.target }}
