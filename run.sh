@@ -16,7 +16,7 @@ module load nextflow/25.04.6
 export NXF_SINGULARITY_CACHEDIR=$MYSCRATCH/containers/
 export SINGULARITY_CACHEDIR=$MYSCRATCH/containers/
 
-nextflow run main.nf -c pawsey.config \
+nextflow run main.nf -c cluster_specific_configs/pawsey_setonix.config \
     --design_mode rfd_denovo \
     -resume \
     --num_designs 1 --seqs_per_design 1 --design_length 5
