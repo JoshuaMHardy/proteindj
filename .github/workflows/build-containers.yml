@@ -2,7 +2,7 @@ name: Build containers
 
 on:
   push:
-    branches: [githubactiontest]
+    branches: [containerrebuild] #change this to the branch you want to trigger the workflow on
     paths:
       - "docker/**"
       - ".github/workflows/build-containers.yml"
