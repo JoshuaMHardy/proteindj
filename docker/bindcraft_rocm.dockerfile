@@ -1,4 +1,5 @@
-FROM quay.io/pawsey/rocm-mpich-base:rocm7.0.2-mpich3.4.3-ubuntu24.04
+ARG ROCM_VERSION=7.0.2
+FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}
 
 # Use bash to support string substitution.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
