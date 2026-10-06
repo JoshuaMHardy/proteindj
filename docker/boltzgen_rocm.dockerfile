@@ -1,4 +1,4 @@
-FROM quay.io/pawsey/rocm-mpich-base:rocm6.4.1-mpich3.4.3-ubuntu24.04
+FROM rocm/dev-ubuntu-24.04:6.4.1
 
 ENV ROCM_RELEASE=6.4.1
 ENV ROCM_PATH=/opt/rocm-$ROCM_RELEASE
