@@ -1,4 +1,89 @@
-FROM quay.io/pawsey/alphafold2:v2.3.2_rocm6.2.4
+FROM rocm/dev-ubuntu-24.04:6.2.4
+
+# Use bash to support string substitution.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# ROCm environment (base image installs to /opt/rocm — not /opt/rocm-$ROCM_RELEASE).
+ENV ROCM_RELEASE=6.2.4
+ENV ROCM_PATH=/opt/rocm
+ENV PATH=${ROCM_PATH}/bin:${ROCM_PATH}/lib/llvm/bin:${PATH}
+ENV LD_LIBRARY_PATH=/opt/mpich/lib:${ROCM_PATH}/lib:/opt/miniforge3/lib
+ENV JAX_PLATFORMS=rocm,cpu
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update --quiet \
+    && apt-get install --no-install-recommends --yes --quiet \
+        build-essential \
+        cmake \
+        git \
+        hmmer \
+        kalign \
+        tzdata \
+        wget \
+		clang \
+        doxygen \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get autoremove --yes \
+    && apt-get clean
+
+WORKDIR /opt
+
+# Clone alphafold 
+ENV ALPHAFOLD_PATH=/app/alphafold
+RUN set -eux ; \
+    git clone --branch v2.3.2 https://github.com/google-deepmind/alphafold.git $ALPHAFOLD_PATH ; \
+    cd $ALPHAFOLD_PATH ; \
+    sed -i 's#CUDA#OpenCL#g' alphafold/relax/amber_minimize.py ; \
+    sed -i 's#HIP#OpenCL#g' alphafold/relax/amber_minimize.py ; \
+    cd $ALPHAFOLD_PATH/alphafold/common ; \
+    curl -LO https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
+COPY af2_config.py ${ALPHAFOLD_PATH}/alphafold/model/config.py
+
+# Install miniforge (mamba)
+RUN set -eux ; \
+    curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" ; \
+    bash Miniforge3-$(uname)-$(uname -m).sh -b -p /opt/miniforge3 -s ; \
+    rm -rf ./Miniforge3-*
+ENV PATH=/opt/miniforge3/bin:${PATH}
+
+RUN mamba install -y -c conda-forge -c bioconda \
+    python=3.11 \
+    'setuptools<82' \
+    pdbfixer==1.9 \
+    bioconda::hhsuite
+    
+RUN mamba install -y -c streamhpc -c conda-forge --channel-priority flexible openmm-hip==8.0.0 && \
+    mamba clean -afy
+
+# Install pip packages.
+COPY alphafold2_rocm_requirements.txt /app/alphafold/requirements.txt
+RUN pip3 install -r /app/alphafold/requirements.txt --no-cache-dir --root-user-action=ignore --break-system-packages && \
+    pip uninstall -y jax jaxlib --break-system-packages && \
+    python3 -m pip install --no-cache-dir --root-user-action=ignore --break-system-packages https://github.com/ROCm/jax/releases/download/rocm-jax-v0.4.34/jaxlib-0.4.34-cp311-cp311-manylinux_2_28_x86_64.whl && \
+    python3 -m pip install --no-cache-dir --root-user-action=ignore --break-system-packages https://github.com/ROCm/jax/releases/download/rocm-jax-v0.4.34/jax_rocm60_pjrt-0.4.34-py3-none-manylinux_2_28_x86_64.whl https://github.com/ROCm/jax/releases/download/rocm-jax-v0.4.34/jax_rocm60_plugin-0.4.34-cp311-cp311-manylinux_2_28_x86_64.whl && \
+    python3 -m pip install --no-cache-dir --root-user-action=ignore --break-system-packages https://github.com/ROCm/jax/archive/refs/tags/rocm-jax-v0.4.34.tar.gz && \
+    python3 -m pip install --no-cache-dir --root-user-action=ignore --break-system-packages 'setuptools<82' && \
+    python3 -c "import setuptools; print('setuptools', setuptools.__version__, 'OK')" && \
+    python3 -c "import importlib.metadata as m; [print(p, m.version(p)) for p in ('jax','jaxlib','jax-rocm60-pjrt','jax-rocm60-plugin')]; print('JAX ROCm wheels OK')"
+
+# Fix OpenMM imports in AlphaFold
+RUN find /app/alphafold -type f -name "*.py" -exec sed -i \
+    -e 's/from simtk\.openmm/from openmm/g' \
+    -e 's/from simtk import openmm/import openmm/g' \
+    -e 's/import simtk\.openmm/import openmm/g' \
+    -e 's/simtk\.openmm\./openmm./g' \
+    {} +
+
+# Fix the specific internal import and  update any unit references
+RUN sed -i 's/from simtk.openmm.app.internal.pdbstructure import PdbStructure/from openmm.app.internal.pdbstructure import PdbStructure/g' \
+    /app/alphafold/alphafold/relax/amber_minimize.py && \
+	find /app/alphafold -type f -name "*.py" -exec sed -i \
+    's/simtk\.unit/openmm.unit/g' {} +
+
+# setuptools>=82 removed pkg_resources (still required by TensorFlow / AlphaFold).
+RUN python3 -m pip install --force-reinstall --no-cache-dir --root-user-action=ignore --break-system-packages \
+        'setuptools<82' \
+    && python3 -c "import setuptools; print('setuptools', setuptools.__version__, 'OK')"
 
 # Clone the dl_binder_design repository
 RUN git clone https://github.com/PapenfussLab/dl_binder_design.git /dl_binder_design && \
@@ -6,7 +91,9 @@ RUN git clone https://github.com/PapenfussLab/dl_binder_design.git /dl_binder_de
     git clone https://github.com/dauparas/ProteinMPNN.git /dl_binder_design/ProteinMPNN
 
 ENV AMD_COMGR_CACHE_DIR=/tmp/comgr_cache
-COPY alphafold2_rocm.dockerfile /opt/docker-recipes/af2_rocm.dockerfile
+COPY alphafold2_rocm.dockerfile alphafold2_rocm_config.py alphafold2_rocm_requirements.txt /opt/docker-recipes/
+
+WORKDIR /app/alphafold
 
 LABEL org.opencontainers.image.authors="Sarah Beecroft <sarah.beecroft@csiro.au>" \
       org.opencontainers.image.description="af2 for proteinDJ with ROCm6.4.2 on Ubuntu 24.04 for AMD GPUs"
