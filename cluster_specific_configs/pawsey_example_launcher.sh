@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=230GB
-#SBATCH --account=pawsey0012
+#SBATCH --account=pawsey0000
 #SBATCH --partition=work
 
 
