@@ -1,5 +1,5 @@
-FROM quay.io/sarahbeecroft9/rocm-mpich-base:rocm7.2.3-mpich3.4.3-ubuntu24.04
-# Use bash to support string substitution.
+FROM rocm/dev-ubuntu-24.04:7.2.3
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
