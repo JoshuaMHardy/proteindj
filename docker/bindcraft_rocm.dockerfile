@@ -51,7 +51,7 @@ RUN git clone https://github.com/PapenfussLab/FreeBindCraft.git /opt/BindCraft &
     chmod +x /opt/BindCraft/functions/sc
 
 # Copy the environment file and Dockerfile into the image for reproducibility.
-COPY bindcraft_rocm.dockerfile bindcraft.yml /opt/docker-recipes/
+COPY bindcraft_rocm.dockerfile bindcraft_rocm.yml /opt/docker-recipes/
 
 # Install the conda environment and ColabDesign (no dependencies for ColabDesign, since they are already in the conda env).
 RUN mamba env update -n base -y -f /opt/docker-recipes/bindcraft.yml && \
