@@ -29,11 +29,12 @@ RUN git clone -b v2.2.1 https://github.com/jwohlwend/boltz.git
 WORKDIR /opt/boltz
 
 # Custom pyproject.toml
-COPY pyproject.toml .
+COPY boltz_rocm_pyproject.toml .
 # Install boltz
 RUN	pip install -e . --no-cache-dir 
 
-COPY Dockerfile pyproject.toml /opt/docker-recipes/
+COPY boltz_rocm_pyproject.toml boltz_rocm.dockerfile /opt/docker-recipes/
+
 WORKDIR /opt 
 LABEL org.opencontainers.image.authors="Sarah Beecroft <sarah.beecroft@csiro.au>" \
       org.opencontainers.image.description="Boltz2 v.2.2.1 with ROCm 6.4.1 support on Ubuntu 24.04 for AMD GPUs" \
