@@ -1,5 +1,4 @@
-FROM quay.io/pawsey/rocm-mpich-base:rocm6.2.4-mpich3.4.3-ubuntu24.04
-
+FROM rocm/dev-ubuntu-24.04:6.2.4
 # Use bash to support string substitution.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
