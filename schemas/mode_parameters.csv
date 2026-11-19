@@ -132,6 +132,7 @@ seq_min_pi,null,seq_min_pi,,seq_min_pi,,seq_min_pi,,seq_min_pi,,seq_min_pi,,seq_
 seq_max_pi,null,seq_max_pi,,seq_max_pi,,seq_max_pi,,seq_max_pi,,seq_max_pi,,seq_max_pi,,seq_max_pi,,seq_max_pi,
 rfd_models,null,rfd_models,,rfd_models,,rfd_models,,rfd_models,,rfd_models,,rfd_models,,rfd_models,,rfd_models,
 af2_models,null,af2_models,,af2_models,,af2_models,,af2_models,,af2_models,,af2_models,,af2_models,,af2_models,
+bg_use_kernels,auto,,,,,,,,,,,bg_use_kernels,,bg_use_kernels,
 boltz_models,null,boltz_models,,boltz_models,,boltz_models,,boltz_models,,boltz_models,,boltz_models,,boltz_models,,boltz_models,
 af2_jax_compilation_cache_dir,null,af2_jax_compilation_cache_dir,,af2_jax_compilation_cache_dir,,af2_jax_compilation_cache_dir,,af2_jax_compilation_cache_dir,,af2_jax_compilation_cache_dir,,,,,,,
 gpu_model,null,gpu_model,,gpu_model,,gpu_model,,gpu_model,,gpu_model,,gpu_model,,gpu_model,,gpu_model,
