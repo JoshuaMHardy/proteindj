@@ -10,11 +10,12 @@ ARG MINIFORGE_VERSION=26.9.4-2
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Apptainer ignores ENTRYPOINT, so the conda env is installed into base and put on PATH.
+# Apptainer ignores ENTRYPOINT, so the BindCraft env is put on PATH instead of being activated.
 ENV PIP_NO_CACHE_DIR=1 \
     PYTHONNOUSERSITE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH=/opt/conda/bin:${PATH}
+    CONDA_PREFIX=/opt/conda/envs/BindCraft \
+    PATH=/opt/conda/envs/BindCraft/bin:/opt/conda/bin:${PATH}
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --quiet && \
@@ -33,12 +34,13 @@ RUN wget -q "https://github.com/conda-forge/miniforge/releases/download/${MINIFO
 # ---- CUDA environment: jax 0.6.2, matching the v3.0 image ----
 FROM common AS build-cuda
 COPY envs/bindcraft-cuda.yml /tmp/env.yml
-RUN mamba env update -n base -y -f /tmp/env.yml && mamba clean -afy
+# A separate env: updating base makes mamba delete itself while pip is still running.
+RUN mamba env create -y -f /tmp/env.yml && mamba clean -afy
 
 # ---- ROCm environment: only rocm-jax 0.6.0 wheels exist for ROCm 7 ----
 FROM common AS build-rocm
 COPY envs/bindcraft-rocm.yml /tmp/env.yml
-RUN mamba env update -n base -y -f /tmp/env.yml && mamba clean -afy
+RUN mamba env create -y -f /tmp/env.yml && mamba clean -afy
 ENV JAX_PLATFORMS=rocm,cpu \
     OPENMM_PLATFORM_ORDER=HIP,OpenCL,CPU \
     OPENMM_DEFAULT_PLATFORM=HIP \
