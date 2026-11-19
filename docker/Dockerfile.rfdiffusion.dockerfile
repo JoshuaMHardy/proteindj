@@ -26,7 +26,12 @@ RUN git clone https://github.com/PapenfussLab/RFdiffusion /app/RFdiffusion && \
     git -C /app/RFdiffusion checkout 0938f87
 
 RUN pip install \
-        dgl==2.4.0 -f https://data.dgl.ai/wheels/torch-2.4/cu124/repo.html \
+        networkx \
+        numpy \
+        psutil \
+        requests \
+        scipy \
+        tqdm \
         torch==2.4.0 -f https://download.pytorch.org/whl/cu124 \
         e3nn==0.5.8 \
         wandb==0.23.0 \
@@ -44,6 +49,17 @@ RUN pip install \
         tensorflow==2.20.0 \
         /app/RFdiffusion/env/SE3Transformer && \
     pip install /app/RFdiffusion --no-deps
+
+# data.dgl.ai no longer serves wheels, so unpack the identical DGL 2.4.0 build from the dglteam conda channel.
+ARG DGL_URL=https://conda.anaconda.org/dglteam/label/th24_cu124/linux-64/dgl-2.4.0.th24.cu124-py310_0.tar.bz2
+ARG DGL_SHA256=9080ef4e4751f28a801540774f86a658f8c8ea992294aed7501561515b85e5ab
+RUN apt-get update --quiet && apt-get install --no-install-recommends --yes --quiet wget bzip2 && \
+    wget -q "${DGL_URL}" -O /tmp/dgl.tar.bz2 && \
+    echo "${DGL_SHA256}  /tmp/dgl.tar.bz2" | sha256sum -c - && \
+    mkdir /tmp/dgl && tar -xjf /tmp/dgl.tar.bz2 -C /tmp/dgl && \
+    cp -r /tmp/dgl/lib/python3.10/site-packages/dgl* "$(python -c 'import site; print(site.getsitepackages()[0])')/" && \
+    rm -rf /tmp/dgl /tmp/dgl.tar.bz2 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ---- ROCm: AMD's DGL image ships torch 2.7.1 and DGL 2.4 for ROCm ----
 FROM base-rocm AS build-rocm
