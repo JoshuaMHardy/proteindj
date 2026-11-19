@@ -28,7 +28,11 @@ RUN git clone https://github.com/PapenfussLab/RFdiffusion /app/RFdiffusion && \
 RUN pip install \
         networkx \
         numpy \
+        packaging \
+        pandas \
         psutil \
+        pydantic \
+        pyyaml \
         requests \
         scipy \
         tqdm \
