@@ -64,9 +64,9 @@ workflow {
     if (!(params.gpu_backend in ['cuda', 'rocm'])) {
         throw new IllegalArgumentException("Invalid gpu_backend: ${params.gpu_backend}. Must be 'cuda' or 'rocm'.")
     }
-    // RFD4 depends on NVIDIA-only cuEquivariance kernels.
+    // RFD4 has no cuEquivariance on ROCm and runs its torch fallbacks.
     if (params.gpu_backend == 'rocm' && params.design_mode == 'rfd4_denovo') {
-        throw new IllegalArgumentException("design_mode 'rfd4_denovo' is not available with gpu_backend 'rocm'.")
+        log.warn "rfd4_denovo on gpu_backend 'rocm' is experimental: RFD4 is not supported on AMD GPUs upstream."
     }
 
     // Auto-detect monomer vs binder behavior for RFdiffusion/BoltzGen modes (computed once, used throughout)

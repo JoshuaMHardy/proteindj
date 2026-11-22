@@ -20,7 +20,7 @@ variable "TORCH_ROCM6_INDEX" {
 }
 
 variable "TORCH_ROCM7_INDEX" {
-  default = "rocm7.0"
+  default = "rocm7.2"
 }
 
 variable "SOURCE_URL" {
@@ -35,6 +35,7 @@ group "default" {
     "boltzgen-cuda", "boltzgen-rocm",
     "dl_binder_design-cuda", "dl_binder_design-rocm",
     "fampnn-cuda", "fampnn-rocm",
+    "rfd4-cuda", "rfd4-rocm",
     "rfdiffusion-cuda", "rfdiffusion-rocm",
   ]
 }
@@ -53,7 +54,7 @@ target "python_tools" {
 target "gpu" {
   name = "${tool}-${backend}"
   matrix = {
-    tool    = ["bindcraft", "boltz2", "boltzgen", "dl_binder_design", "fampnn", "rfdiffusion"]
+    tool    = ["bindcraft", "boltz2", "boltzgen", "dl_binder_design", "fampnn", "rfd4", "rfdiffusion"]
     backend = ["cuda", "rocm"]
   }
   dockerfile = "Dockerfile.${tool}.dockerfile"

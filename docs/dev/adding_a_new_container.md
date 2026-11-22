@@ -51,10 +51,10 @@ without a version bump overwrites it.
 | JAX | Only the ROCm/jax and ROCm/rocm-jax release wheels (0.4.34 for ROCm 6, 0.6.0 for ROCm 7), so versions differ from CUDA. |
 | DGL | Use AMD's `rocm/dgl` image. |
 | OpenMM | `openmm[hip6]` / `OpenMM-HIP-7` provide the `HIP` platform. There is no `CUDA` platform. |
-| cuEquivariance (Boltz, BoltzGen, RFD4) | NVIDIA only. Boltz needs `--no_kernels` and BoltzGen `--use_kernels false`; the pipeline sets both when `gpu_backend = 'rocm'`. RFD4 is CUDA-only. |
+| cuEquivariance (Boltz, BoltzGen, RFD4) | NVIDIA only. Boltz needs `--no_kernels` and BoltzGen `--use_kernels false`; the pipeline sets both when `gpu_backend = 'rocm'`. RFD4 runs its pure-torch fallbacks (`DISABLE_CUEQUIVARIANCE=1`) and is experimental: upstream supports NVIDIA GPUs only. |
 
 If a tool has no working ROCm path, give it only a `-cuda` target and block the `rocm` backend for
-it in the pipeline (see `rfd4_denovo` in `main.nf`).
+it in the pipeline.
 
 ---
 
@@ -106,4 +106,14 @@ Run the pipeline with `--gpu_backend rocm` to select the ROCm images.
 Nextflow resolves a container first in `apptainer.libraryDir` (read-only), then in
 `apptainer.cacheDir`. The file name is the image reference with `/` and `:` replaced by `-` plus
 `.img`, for example `ghcr.io-hardylaboratory-proteindj-fampnn-v3.1-rocm.img`. An administrator can
-pre-pull each release into the library directory so users never convert images.
+pre-pull each release into the library directory so users never convert images, using
+`scripts/pull_containers.sh`:
+
+```bash
+scripts/pull_containers.sh -l /vast/projects/alphafold/databases/predictedDb/containers/proteinDJ/library -T
+```
+
+It reads the version and registry from `nextflow.config` and the tool list from
+`docker/docker-bake.hcl`, skips images that already exist (`-f` re-pulls), and renames each image
+into place only after it has pulled and passed the smoke test (`-T`). Use `-n` for a dry run and
+`-b rocm` to limit the backends. Run it on a compute node with a large `-t` scratch directory.

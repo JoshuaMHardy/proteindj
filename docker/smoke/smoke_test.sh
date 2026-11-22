@@ -61,6 +61,11 @@ case "${tool}" in
         python -c "import dgl"
         python /app/RFdiffusion/scripts/run_inference.py --help > /dev/null
         ;;
+    rfd4)
+        check_torch
+        python -c "import rfproteina"
+        rfd4-generate --help > /dev/null
+        ;;
     *)
         echo "Unknown tool: ${tool}" >&2
         exit 1

@@ -11,8 +11,9 @@ FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION} AS base-rocm
 
 FROM base-${GPU_BACKEND} AS final
 ARG GPU_BACKEND
-ARG TORCH_ROCM_INDEX=rocm7.0
-ARG TORCH_VERSION=2.10.0
+ARG TORCH_ROCM_INDEX=rocm7.2
+ARG TORCH_CUDA_INDEX=cu126
+ARG TORCH_VERSION=2.12.1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -42,7 +43,7 @@ RUN python3 -m venv /opt/venv
 
 # Backend-specific: the only place CUDA and ROCm differ.
 RUN if [ "$GPU_BACKEND" = "cuda" ]; then \
-        pip install "torch==${TORCH_VERSION}"; \
+        pip install "torch==${TORCH_VERSION}" --index-url "https://download.pytorch.org/whl/${TORCH_CUDA_INDEX}"; \
     elif [ "$GPU_BACKEND" = "rocm" ]; then \
         pip install "torch==${TORCH_VERSION}" --index-url "https://download.pytorch.org/whl/${TORCH_ROCM_INDEX}"; \
     else \
