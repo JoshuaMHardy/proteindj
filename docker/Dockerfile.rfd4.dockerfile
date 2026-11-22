@@ -35,18 +35,21 @@ RUN python3 -m venv /opt/venv
 FROM common AS build-cuda
 ARG TORCH_VERSION=2.12.1
 ARG RFD4_VERSION=0.0.3
+# rfd4-proteina 0.0.3 allows atomworks <4, but 3.1.0 removed the to_cif_string it imports.
+ARG ATOMWORKS_VERSION=3.0.4
 RUN pip install "torch==${TORCH_VERSION}" --index-url https://download.pytorch.org/whl/cu126 && \
-    pip install "rfd4-proteina[all-cuda12]==${RFD4_VERSION}"
+    pip install "rfd4-proteina[all-cuda12]==${RFD4_VERSION}" "atomworks[ml,openbabel]==${ATOMWORKS_VERSION}"
 
 # ---- ROCm (experimental): the plain package has no NVIDIA dependencies and RFD4 falls back to
 # torch attention and triangle ops when cuEquivariance is absent. ----
 FROM common AS build-rocm
 ARG TORCH_VERSION=2.12.1
 ARG RFD4_VERSION=0.0.3
+ARG ATOMWORKS_VERSION=3.0.4
 ARG TORCH_ROCM_INDEX=rocm7.2
 ENV DISABLE_CUEQUIVARIANCE=1
 RUN pip install "torch==${TORCH_VERSION}" --index-url "https://download.pytorch.org/whl/${TORCH_ROCM_INDEX}" && \
-    pip install "rfd4-proteina==${RFD4_VERSION}"
+    pip install "rfd4-proteina==${RFD4_VERSION}" "atomworks[ml,openbabel]==${ATOMWORKS_VERSION}"
 
 FROM build-${GPU_BACKEND} AS final
 ARG GPU_BACKEND
