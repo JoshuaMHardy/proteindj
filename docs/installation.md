@@ -245,7 +245,7 @@ module load apptainer
 scripts/pull_containers.sh -l /path/to/library -T -t /path/to/scratch
 ```
 
-Use `-b "cuda rocm"` to pull both backends, `-n` for a dry run and `-f` to re-pull existing images. Run it on a compute node, for example with `sbatch --cpus-per-task 16 --mem 96G --time 6:00:00 --wrap '...'`, as the conversions need a lot of memory. If you use `/dev/shm` for scratch, the job's memory limit must cover it. Set `apptainer.libraryDir` to the same directory in your profile, and run the script again after each ProteinDJ release.
+On a cluster that has Singularity instead of Apptainer, add `-e singularity` (and set `singularity.libraryDir` rather than `apptainer.libraryDir`). Use `-b "cuda rocm"` to pull both backends, `-n` for a dry run and `-f` to re-pull existing images. Run it on a compute node, for example with `sbatch --cpus-per-task 16 --mem 96G --time 6:00:00 --wrap '...'`, as the conversions need a lot of memory. If you use `/dev/shm` for scratch, the job's memory limit must cover it. Set `apptainer.libraryDir` to the same directory in your profile, and run the script again after each ProteinDJ release.
 
 ### Building or modifying containers
 
