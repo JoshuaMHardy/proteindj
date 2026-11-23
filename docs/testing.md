@@ -8,7 +8,7 @@ ProteinDJ has three complementary test suites, from fastest/most granular to slo
 |-------|----------|---------|-----------------|
 | pytest | `scripts/`, `bindsweeper/` | seconds | Pure-Python logic in the scripts invoked by Nextflow modules |
 | nf-test unit | `tests/unit` | seconds | Groovy helper classes/functions (`lib/*.groovy`) - no containers, no GPU |
-| nf-test module (CPU) | `tests/modules` (tag `cpu`) | ~5-30s each | Real `python_tools.sif` container process wiring/logic, no GPU |
+| nf-test module (CPU) | `tests/modules` (tag `cpu`) | ~5-30s each | Real `python_tools` container process wiring/logic, no GPU |
 | nf-test module (GPU) | `tests/modules` (tag `gpu`) | ~1-10 min each | Real GPU processes (RFdiffusion, ProteinMPNN, FAMPNN, AF2, Boltz, BindCraft, BoltzGen) |
 | `end2end_test.sh` | `scripts/end2end_test.sh` | ~60 min | Full pipeline, all 13 supported modes, on 4 A30 GPUs |
 

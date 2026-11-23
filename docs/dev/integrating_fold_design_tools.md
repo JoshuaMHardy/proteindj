@@ -72,13 +72,13 @@ with these hard requirements:
 
 ### 3.1 Container & process labels
 
-- Dockerfile/def: [apptainer/bindcraft.def](../apptainer/bindcraft.def) builds a conda env
-  (`BindCraft`) with a pinned fork (`FreeBindCraft`, PyRosetta-free), JAX+CUDA, ColabDesign, etc.
+- Dockerfile: [docker/Dockerfile.bindcraft.dockerfile](../docker/Dockerfile.bindcraft.dockerfile) builds a conda env
+  (`BindCraft`) with a pinned fork (`FreeBindCraft`, PyRosetta-free), JAX (CUDA or ROCm), ColabDesign, etc.
 - [nextflow.config](../nextflow.config) declares a process label block:
   ```groovy
   withLabel: BC {
-      container = "${params.container_registry}/bindcraft:${params.container_version}"
-      containerOptions = """--nv \
+      container = "${params.container_registry}/bindcraft:${params.container_version}-${params.gpu_backend}"
+      containerOptions = """${params.gpu_backend == 'rocm' ? '--rocm' : '--nv'} \
           --bind ${params.af2_models}:/af2params \
           """
   }
@@ -228,13 +228,14 @@ Use BindCraft as the template. Concretely, to add tool `X` (prefix `x_`) as a ne
 value (e.g. `x_denovo`):
 
 1. **Container**
-   - [ ] Add `apptainer/x.def` (or Dockerfile) building the tool + a way to invoke it headlessly/CLI.
+   - [ ] Add `docker/Dockerfile.x.dockerfile` building the tool + a way to invoke it headlessly/CLI.
    - [ ] Add a `withLabel: X { container = ...; containerOptions = ... }` block to
      [nextflow.config](../nextflow.config)'s `process {}` scope. Reuse existing model-weight binds
      (`af2_models`, etc.) if the tool genuinely needs the same weights; otherwise add a new
      `x_models` param + bind (see the `bg_models` param and `BG` label in nextflow.config as a
      completed real-world example of this exact step, from the BoltzGen integration).
-   - [ ] Add build/download entries to `apptainer/build_containers.sh` / `download_containers.sh`.
+   - [ ] Register the tool in `docker/docker-bake.hcl` and add a smoke test, following
+     [adding_a_new_container.md](adding_a_new_container.md).
 
 2. **Nextflow module** (`modules/x.nf`)
    - [ ] `PrepX` (CPU, `python_tools` label): translate ProteinDJ params → tool-native settings file(s).

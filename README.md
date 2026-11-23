@@ -61,7 +61,7 @@ Next, download the models for AF2, Boltz, RFdiffusion, RFD4 etc. (~18 GB) using 
 bash scripts/download_models.sh
 ```
 
-Apptainer will automatically fetch containers as needed during the Nextflow run and cache them locally to the location specified by the environment variable `NXF_APPTAINER_CACHEDIR`. If you would like to build containers locally, you can follow our [Installation Guide](docs/installation.md).
+Apptainer will automatically fetch the containers as needed during the Nextflow run (pulled from the GitHub Container Registry and cached to `apptainer.cacheDir`, or `NXF_APPTAINER_CACHEDIR`). Images are published for NVIDIA GPUs (`--gpu_backend cuda`, the default) and AMD GPUs (`--gpu_backend rocm`). On a shared cluster, an administrator can pre-pull them once with `scripts/pull_containers.sh`. See the [Installation Guide](docs/installation.md) for details, including how to build your own containers.
 
 ## Using ProteinDJ <a name="execution"></a>
 
@@ -221,7 +221,7 @@ We have designed ProteinDJ to be compatible with the [Seqera platform](https://s
 
 `Unknown variable 'metadata_ch_fold'` - We are using topic channels for metadata, and this feature is only available in Nextflow v24.04 and above. This error occurs with earlier versions of Nextflow.
 
-`FATAL:   While pulling image from oci registry: error fetching image to cache: unable to Download Image: error writing layer: stream error: stream ID 1; PROTOCOL_ERROR; received from peer` - Downloading large containers can sometimes fail from the GitHub Container Registry (GHCR), due to timeout or protocol errors. Try increasing `apptainer.pullTimeout` in nextflow.config or changing protocol e.g. `export GODEBUG=http2client=0`
+`FATAL:   While pulling image from oci registry: error fetching image to cache: unable to Download Image: error writing layer: stream error: stream ID 1; PROTOCOL_ERROR; received from peer` - Downloading large containers can sometimes fail from the GitHub Container Registry (GHCR), due to timeout or protocol errors. Try increasing `apptainer.pullTimeout` in nextflow.config or changing protocol e.g. `export GODEBUG=http2client=0`. A failure while converting an image (`mksquashfs ... signal: killed`) means the job ran out of memory or scratch space; see the [Installation Guide](docs/installation.md#step-4-containers).
 
 ### Data used for benchmarking <a name="append-bench"></a>
 

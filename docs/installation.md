@@ -11,7 +11,7 @@ This guide will walk you through installing ProteinDJ and all its dependencies a
 Before starting, ensure you have:
 
 - **Linux/Unix system** with internet access
-- **Sufficient storage space**: ~18 GB for downloaded models and ~50 GB for containers
+- **Sufficient storage space**: ~18 GB for downloaded models and ~50 GB for containers (per GPU backend)
 - **Administrative access** or ability to install software
 - **SLURM cluster** (if using HPC environment)
 
@@ -21,7 +21,7 @@ Before starting, ensure you have:
 | ----------- | -------------------------- | --------------- |
 | **Storage** | 70 GB                      | 100 GB+         |
 | **RAM**     | 32 GB                      | 48 GB+          |
-| **GPU**     | NVIDIA GPU with 16GB+ VRAM | NVIDIA A30/A100 |
+| **GPU**     | NVIDIA GPU with 16GB+ VRAM, or an AMD GPU with ROCm | NVIDIA A30/A100 |
 | **CPU**     | 8 cores                    | 24+ cores       |
 
 ---
@@ -218,75 +218,49 @@ ls -la models/mpnn/hyper_model_weights/    # Should contain 4 .pt files
 
 ---
 
-## Step 4: Build Containers
+## Step 4: Containers
 
-ProteinDJ requires several containers for the different dependencies. By default, these will be fetched during execution of Nextflow and cached by Apptainer to the location specified by the environment variable `NXF_APPTAINER_CACHEDIR`. If you are on a shared environment, we recommend creating a profile in nextflow.config with `apptainer.cacheDir` set to a shared location with read/write permissions for all users (see the Milton/WEHI profile as an example). 
+ProteinDJ runs each tool in its own container. The images are built by GitHub Actions from the Dockerfiles in `docker/` for two GPU backends and published to the GitHub Container Registry as `ghcr.io/hardylaboratory/proteindj/<tool>:<version>-cuda` (NVIDIA) and `-rocm` (AMD). `python_tools` is CPU-only and has no backend suffix. Nextflow pulls them with Apptainer the first time they are needed and converts them to SIF files, so Docker is not required on your cluster.
 
-We recommend using our containers from the cloud, but if you would like to build/modify containers locally, we have provide def files for containers in `proteindj/apptainer`. When updating ProteinDJ make sure to also update your local containers to maintain compatibility with the pipeline. You may already have similar containers for some of these programs, but we have made changes to the source code and environment so we do not recommend using other containers with ProteinDJ. Once the containers have been built, you need to change the path to each built container in `nextflow.config` e.g. for BindCraft: 
-```
-withLabel: 'BC' {
-   container         = "/path/to/containers/bindcraft.sif"
-   containerOptions  = """--nv \
-   --bind ${params.af2_models}:/af2params \
-   """
-}     
-```
+### Choose the GPU backend
 
-We have provided a script for building the containers in a series of sbatch jobs (`apptainer/build_containers.sh`). You may need to tweak the SLURM parameters and enviroment settings for your cluster.
+Set `gpu_backend` in `nextflow.config` (or pass `--gpu_backend rocm`). The default is `'cuda'`. It selects the image tag and whether Apptainer is started with `--nv` or `--rocm`. With `'rocm'` the pipeline also disables the NVIDIA-only cuEquivariance kernels in Boltz-2 and BoltzGen and uses OpenMM's `HIP` platform for ProteinMPNN relaxation. RFD4-Proteina on ROCm is experimental, because upstream supports NVIDIA GPUs only.
 
-> **⚠️ Important:** Container building requires significant resources and may take several hours. We recommend using our pre-compiled containers unless you have reason to build your own.
+### Where the images are stored
 
-### Option A: Automated Parallel Build using SLURM script
+Nextflow looks for an image in `apptainer.libraryDir` (a read-only, admin-managed directory) and then in `apptainer.cacheDir` (writable); anything it has to pull is converted and saved to the cache. Set both in your cluster profile (see `cluster_specific_configs/milton.config` for an example). Without them, images are stored under `work/apptainer` and every new work directory pulls them again.
 
-1. **Navigate to the apptainer directory:**
+The images are large (several GB each), and converting one needs about 20 GB of temporary space. Point `APPTAINER_TMPDIR` and `APPTAINER_CACHEDIR` at a disk directory with plenty of free space, and raise `apptainer.pullTimeout` if pulls time out.
 
-   ```bash
-   cd apptainer
-   ```
+### Option A: Let Nextflow pull the images
 
-2. **Edit build script:**
+Create a profile with a shared, group-writable `apptainer.cacheDir`. The first run converts each image and later runs, by any user, reuse it. This is the simplest option but the first user waits for the conversions.
 
-   ```bash
-   # Edit the BUILD_DIRECTORY in build_containers.sh
-   nano build_containers.sh
+### Option B: Pre-populate a shared library (recommended for shared clusters)
 
-   # Update this line to your desired location:
-   BUILD_DIRECTORY="/path/to/your/containers"
-   ```
-
-3. **Submit build jobs:**
-
-   ```bash
-   ./build_containers.sh
-   ```
-
-4. **Monitor progress:**
-   ```bash
-   # Check SLURM queue
-   squeue -u $USER
-   ```
-
-### Option B: Manual Build
-
-If you don't have SLURM or prefer manual building:
+An administrator can pull every image once so that users never convert anything. The script reads the version and registry from `nextflow.config` and the tool list from `docker/docker-bake.hcl`, saves each image under the file name Nextflow expects, and skips images that already exist:
 
 ```bash
-cd apptainer
-
-# Build each container individually
-apptainer build --fakeroot bindsweeper.sif bindsweeper.def
-apptainer build --fakeroot boltz2.sif boltz2.def
-apptainer build --fakeroot dl_binder_design.sif dl_binder_design.def
-apptainer build --fakeroot fampnn.sif fampnn.def
-apptainer build --fakeroot python_tools.sif python_tools.def
-apptainer build --fakeroot rfdiffusion.sif rfdiffusion.def
-cd ..
+module load apptainer
+scripts/pull_containers.sh -l /path/to/library -T -t /path/to/scratch
 ```
 
-**Verify container builds:**
+Use `-b "cuda rocm"` to pull both backends, `-n` for a dry run and `-f` to re-pull existing images. Run it on a compute node, for example with `sbatch --cpus-per-task 16 --mem 96G --time 6:00:00 --wrap '...'`, as the conversions need a lot of memory. If you use `/dev/shm` for scratch, the job's memory limit must cover it. Set `apptainer.libraryDir` to the same directory in your profile, and run the script again after each ProteinDJ release.
+
+### Building or modifying containers
+
+You do not need to build anything to use ProteinDJ. We have made changes to the source code and environments of the underlying tools, so we do not recommend substituting other containers. To change a container:
+
+1. Edit its Dockerfile in `docker/` (see the [container developer guide](dev/adding_a_new_container.md) for the layout and how to add a tool).
+2. Fork the repository and run the **Build containers** GitHub Actions workflow, which builds and smoke-tests the images and pushes them to `ghcr.io/<your-account>/proteindj`.
+3. Run ProteinDJ with `--container_registry docker://ghcr.io/<your-account>/proteindj`.
+
+**Verify the images:**
 
 ```bash
-ls -la containers/  # Should contain 7 .sif files
+ls -la /path/to/library    # One .img file per tool and backend, e.g. ghcr.io-hardylaboratory-proteindj-fampnn-v3.1-cuda.img
+# On a GPU node, check that the image can see the GPU (use --rocm for AMD)
+apptainer exec --nv --env SMOKE_GPU=1 /path/to/library/<image>.img bash /opt/smoke/smoke_test.sh
 ```
 
 ---
@@ -308,6 +282,7 @@ nano nextflow.config
 | `af2_models`    | Path to AlphaFold2 models                   | `"${projectDir}/models/af2"`   |
 | `boltz_models`  | Path to Boltz-2 models                      | `"${projectDir}/models/boltz"` |
 | `bg_models`     | Path to BoltzGen models                     | `"${projectDir}/models/boltzgen"` |
+| `gpu_backend`   | GPU software stack of the containers        | `'cuda'` (NVIDIA), `'rocm'` (AMD) |
 | `gpu_model`     | Your GPU type                               | `'A30'`, `'V100'`, `'A100'`    |
 | `gpus`          | Number of GPUs to request                   | `1`, `2`, `4`, `8`             |
 | `cpus_per_gpu`  | Number of CPUs to request per GPU           | `8`, `12`                      |
@@ -361,18 +336,24 @@ For thorough validation, we have made an end-to-end testing script that performs
 
 ### Common Issues
 
-**Container build failures:**
+**Container pull or conversion failures:**
 
 ```bash
-# Check available space
+# Check available space (conversion needs ~20 GB of temporary space per image)
 df -h
 
 # Check Apptainer version
 apptainer --version
 
-# Try building with more verbose output
-apptainer build --fakeroot --verbose <container>.sif <container>.def
+# Use disk scratch and cache directories with plenty of free space
+export APPTAINER_TMPDIR=/path/to/scratch
+export APPTAINER_CACHEDIR=/path/to/cache
+
+# GHCR can drop connections on multi-GB layers ("error writing layer: unexpected EOF")
+export GODEBUG=http2client=0
 ```
+
+`mksquashfs ... signal: killed` means the job ran out of memory, including any RAM-backed scratch such as `/dev/shm`.
 
 **Configuration issues:**
 
@@ -382,7 +363,7 @@ nextflow config
 
 # Verify file paths exist
 ls -la /path/to/models
-ls -la /path/to/containers
+ls -la /path/to/library
 ```
 
 **Test failures:**

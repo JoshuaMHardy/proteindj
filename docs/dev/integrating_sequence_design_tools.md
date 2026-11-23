@@ -80,22 +80,22 @@ with these hard requirements:
   in the same upstream repo) and binds the externally-downloaded weights directory:
   ```groovy
   withLabel: MPNN {
-      container = "${params.container_registry}/dl_binder_design:${params.container_version}"
-      containerOptions = """--nv \
+      container = "${params.container_registry}/dl_binder_design:${params.container_version}-${params.gpu_backend}"
+      containerOptions = """${params.gpu_backend == 'rocm' ? '--rocm' : '--nv'} \
           --bind ${params.mpnn_models}:/ProteinMPNN/ \
           --bind ${projectDir}/scripts:/scripts \
           --bind ${projectDir} \
           """
   }
   ```
-- FAMPNN has its own dedicated container/def file
-  ([apptainer/fampnn.def](../apptainer/fampnn.def)) with model weights **baked into the container
+- FAMPNN has its own dedicated container
+  ([docker/Dockerfile.fampnn.dockerfile](../docker/Dockerfile.fampnn.dockerfile)) with model weights **baked into the container
   image** at a fixed path (`/app/fampnn/weights/fampnn_0_3.pt`) rather than bind-mounted — so there
   is no `fampnn_models` param at all:
   ```groovy
   withLabel: FAMPNN {
-      container = "${params.container_registry}/fampnn:${params.container_version}"
-      containerOptions = """--nv \
+      container = "${params.container_registry}/fampnn:${params.container_version}-${params.gpu_backend}"
+      containerOptions = """${params.gpu_backend == 'rocm' ? '--rocm' : '--nv'} \
           --bind ${projectDir}/scripts:/scripts \
           --bind ${projectDir} \
           """
@@ -267,12 +267,13 @@ Use MPNN (simple, backbone-only) and FAMPNN (side-chain-aware, needs an extra pr
 two templates. Concretely, to add tool `X` (prefix `x_`) as a new `seq_method` value (e.g. `'x'`):
 
 1. **Container**
-   - [ ] Add `apptainer/x.def` (or Dockerfile) building the tool + a way to invoke it headlessly/CLI.
+   - [ ] Add `docker/Dockerfile.x.dockerfile` building the tool + a way to invoke it headlessly/CLI.
    - [ ] Add a `withLabel: X { container = ...; containerOptions = ... }` block to
      [nextflow.config](../nextflow.config)'s `process {}` scope. Decide whether model weights are
      bind-mounted (add an `x_models` param, like `mpnn_models`) or baked into the container image
      (like FAMPNN's weights) based on size/update frequency.
-   - [ ] Add build/download entries to `apptainer/build_containers.sh` / `download_containers.sh`.
+   - [ ] Register the tool in `docker/docker-bake.hcl` and add a smoke test, following
+     [adding_a_new_container.md](adding_a_new_container.md).
 
 2. **Nextflow module** (`modules/x.nf`)
    - [ ] `PrepX` (CPU, `python_tools` label): translate the input `fold_N.pdb`/`fold_N.json` pairs
