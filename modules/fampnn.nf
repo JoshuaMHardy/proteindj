@@ -40,6 +40,8 @@ process RunFAMPNN {
 
     script:
     """
+    export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+    
     mkdir -p results
 
     python /app/fampnn/fampnn/inference/seq_design.py \

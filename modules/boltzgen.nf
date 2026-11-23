@@ -57,6 +57,7 @@ process RunBG {
     export MPLCONFIGDIR="\$PWD/tmp"
     export NUMBA_CACHE_DIR="\$PWD/tmp"
     export TRITON_CACHE_DIR="\$PWD/tmp"
+    export CUEQ_TRITON_CACHE_DIR="\$PWD/tmp"
 
     boltzgen run ${spec_yaml} \
         --protocol ${protocol} \

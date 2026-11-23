@@ -69,6 +69,7 @@ process RunBoltz {
         export NUMBA_CACHE_DIR=tmp
         export XDG_CONFIG_HOME=tmp
         export TRITON_CACHE_DIR=tmp
+        export CUEQ_TRITON_CACHE_DIR=tmp
         export HOME=tmp
         
         mkdir yamls

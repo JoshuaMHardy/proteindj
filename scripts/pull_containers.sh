@@ -20,6 +20,7 @@ Usage: pull_containers.sh -l LIBRARY_DIR [options]
   -r REGISTRY   Registry path without a scheme (default: container_registry in nextflow.config)
   -b BACKENDS   Space-separated GPU backends to pull (default: "cuda", option for "rocm")
   -t DIR        Scratch directory for image conversion (default: $APPTAINER_TMPDIR, $TMPDIR or /tmp)
+  -a N          Attempts per image before giving up (default: 3)
   -T            Smoke-test each image after pulling it (CPU only)
   -f            Re-pull images that already exist
   -n            Dry run: print what would be pulled
@@ -40,17 +41,19 @@ version=""
 registry=""
 backends="cuda"
 scratch="${APPTAINER_TMPDIR:-${TMPDIR:-/tmp}}"
+attempts=3
 smoke=0
 force=0
 dry_run=0
 
-while getopts "l:v:r:b:t:Tfnh" opt; do
+while getopts "l:v:r:b:t:a:Tfnh" opt; do
     case "${opt}" in
         l) library="${OPTARG}" ;;
         v) version="${OPTARG}" ;;
         r) registry="${OPTARG}" ;;
         b) backends="${OPTARG}" ;;
         t) scratch="${OPTARG}" ;;
+        a) attempts="${OPTARG}" ;;
         T) smoke=1 ;;
         f) force=1 ;;
         n) dry_run=1 ;;
@@ -92,7 +95,21 @@ umask 022
 if [[ "${dry_run}" == 0 ]]; then
     mkdir -p "${library}" "${scratch}"
     export APPTAINER_TMPDIR="${scratch}"
+    # GHCR drops HTTP/2 streams on multi-GB layers ("error writing layer: unexpected EOF").
+    export GODEBUG="${GODEBUG:-http2client=0}"
 fi
+
+pull_with_retry() {
+    local dest="$1" uri="$2" attempt
+    for ((attempt = 1; attempt <= attempts; attempt++)); do
+        if apptainer pull --force "${dest}" "${uri}"; then
+            return 0
+        fi
+        echo "attempt ${attempt}/${attempts} failed for ${uri}" >&2
+        (( attempt < attempts )) && sleep $((attempt * 15))
+    done
+    return 1
+}
 
 tmp_file=""
 trap '[[ -n "${tmp_file}" ]] && rm -f "${tmp_file}"' EXIT
@@ -117,7 +134,7 @@ for uri in "${uris[@]}"; do
     echo "pulling  ${uri}"
     # Pull next to the destination and rename, so a running pipeline never sees a partial file.
     tmp_file="$(mktemp "${library}/.pull.XXXXXX")"
-    if apptainer pull --force "${tmp_file}" "${uri}" \
+    if pull_with_retry "${tmp_file}" "${uri}" \
         && { [[ "${smoke}" == 0 || "${uri}" == oras://* ]] || apptainer exec "${tmp_file}" bash /opt/smoke/smoke_test.sh; }; then
         chmod 644 "${tmp_file}"
         mv -f "${tmp_file}" "${dest}"
