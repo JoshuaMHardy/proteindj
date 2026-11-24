@@ -4,8 +4,8 @@
 #
 # Nextflow looks for <image reference with '/' and ':' replaced by '-'>.img in the library
 # directory, for example
-#   docker://ghcr.io/hardylaboratory/proteindj/fampnn:v3.1-rocm
-#   -> ghcr.io-hardylaboratory-proteindj-fampnn-v3.1-rocm.img
+#   docker://quay.io/proteindj/fampnn:v3.1-rocm
+#   -> quay.io-proteindj-fampnn-v3.1-rocm.img
 #
 # Run it as the account that owns the library, ideally on a compute node: converting the large
 # GPU images needs plenty of RAM and temporary disk.
@@ -30,10 +30,10 @@ Usage: pull_containers.sh -l LIBRARY_DIR [options]
   -n            Dry run: print what would be pulled
   -h            Show this help
 
-Private GHCR packages need credentials first, either
-  apptainer remote login --username USER docker://ghcr.io     (or: singularity remote login ...)
+Private repositories need credentials first, either
+  apptainer remote login --username USER docker://quay.io     (or: singularity remote login ...)
 or APPTAINER_DOCKER_USERNAME and APPTAINER_DOCKER_PASSWORD (SINGULARITY_DOCKER_USERNAME and
-SINGULARITY_DOCKER_PASSWORD for Singularity), using a token with read:packages.
+SINGULARITY_DOCKER_PASSWORD for Singularity), using a read-only robot account or token.
 EOF
 }
 
@@ -127,7 +127,7 @@ umask 022
 if [[ "${dry_run}" == 0 ]]; then
     mkdir -p "${library}" "${scratch}"
     export "${tmpdir_var}=${scratch}"
-    # GHCR drops HTTP/2 streams on multi-GB layers ("error writing layer: unexpected EOF").
+    # Registries can drop HTTP/2 streams on multi-GB layers ("error writing layer: unexpected EOF").
     export GODEBUG="${GODEBUG:-http2client=0}"
 fi
 

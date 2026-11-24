@@ -67,7 +67,17 @@ def main() -> None:
         os.environ.get("BEFORE", ""),
         os.environ.get("TARGETS", "all"),
     )
-    matrix = {"include": [{"target": n, "image": targets[n]["tags"][0]} for n in names]}
+    # The build cache lives in a tag of the image's own repository, as Quay repositories are flat.
+    matrix = {
+        "include": [
+            {
+                "target": n,
+                "image": targets[n]["tags"][0],
+                "cache": f"{targets[n]['tags'][0].rsplit(':', 1)[0]}:buildcache-{n}",
+            }
+            for n in names
+        ]
+    }
     print(json.dumps(matrix, indent=2))
     with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
         fh.write(f"matrix={json.dumps(matrix)}\n")

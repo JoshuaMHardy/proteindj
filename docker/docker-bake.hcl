@@ -1,5 +1,5 @@
 variable "REGISTRY" {
-  default = "ghcr.io/hardylaboratory/proteindj"
+  default = "quay.io/proteindj"
 }
 
 variable "VERSION" {

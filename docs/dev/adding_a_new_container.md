@@ -12,7 +12,7 @@ a container.
 graph LR
     A["docker/Dockerfile.&lt;tool&gt;.dockerfile"] --> B[docker/docker-bake.hcl]
     B --> C[".github/workflows/build-containers.yml"]
-    C --> D["ghcr.io/hardylaboratory/proteindj/&lt;tool&gt;:&lt;version&gt;-&lt;backend&gt;"]
+    C --> D["quay.io/proteindj/&lt;tool&gt;:&lt;version&gt;-&lt;backend&gt;"]
     D --> E["nextflow.config: params.gpu_backend"]
 ```
 
@@ -26,7 +26,7 @@ graph LR
 | `.github/scripts/bake_matrix.py` | Reads `docker buildx bake --print` and selects the targets to build. |
 | `.github/workflows/build-containers.yml` | Plans the matrix, builds and pushes each target, then smoke-tests it. |
 
-Images are tagged `ghcr.io/hardylaboratory/proteindj/<tool>:<VERSION>-cuda|rocm`. `python_tools`
+Images are tagged `quay.io/proteindj/<tool>:<VERSION>-cuda|rocm`. `python_tools`
 is CPU-only and has no backend suffix. `VERSION` is a variable in `docker-bake.hcl` and is kept in
 sync with `params.container_version` by `scripts/bump_version.py`. The tag is floating: a rebuild
 without a version bump overwrites it.
@@ -91,13 +91,13 @@ No Docker is needed on the cluster, so the workflow is the only build path.
 CI runs the smoke test on CPU only. Pull the image and repeat it with a GPU:
 
 ```bash
-apptainer pull fampnn_v3.1-rocm.sif docker://ghcr.io/hardylaboratory/proteindj/fampnn:v3.1-rocm
+apptainer pull fampnn_v3.1-rocm.sif docker://quay.io/proteindj/fampnn:v3.1-rocm
 apptainer exec --rocm --env SMOKE_GPU=1 fampnn_v3.1-rocm.sif bash /opt/smoke/smoke_test.sh
 ```
 
 Use `--nv` for CUDA images. `SMOKE_GPU=1` additionally requires torch and jax to see a device.
 Packages are private by default; authenticate with
-`apptainer remote login --username <user> docker://ghcr.io` or make them public.
+`apptainer remote login --username <user> docker://quay.io` or make them public.
 
 Run the pipeline with `--gpu_backend rocm` to select the ROCm images.
 
@@ -105,7 +105,7 @@ Run the pipeline with `--gpu_backend rocm` to select the ROCm images.
 
 Nextflow resolves a container first in `apptainer.libraryDir` (read-only), then in
 `apptainer.cacheDir`. The file name is the image reference with `/` and `:` replaced by `-` plus
-`.img`, for example `ghcr.io-hardylaboratory-proteindj-fampnn-v3.1-rocm.img`. An administrator can
+`.img`, for example `quay.io-proteindj-fampnn-v3.1-rocm.img`. An administrator can
 pre-pull each release into the library directory so users never convert images, using
 `scripts/pull_containers.sh`:
 

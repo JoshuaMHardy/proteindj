@@ -220,7 +220,7 @@ ls -la models/mpnn/hyper_model_weights/    # Should contain 4 .pt files
 
 ## Step 4: Containers
 
-ProteinDJ runs each tool in its own container. The images are built by GitHub Actions from the Dockerfiles in `docker/` for two GPU backends and published to the GitHub Container Registry as `ghcr.io/hardylaboratory/proteindj/<tool>:<version>-cuda` (NVIDIA) and `-rocm` (AMD). `python_tools` is CPU-only and has no backend suffix. Nextflow pulls them with Apptainer the first time they are needed and converts them to SIF files, so Docker is not required on your cluster.
+ProteinDJ runs each tool in its own container. The images are built by GitHub Actions from the Dockerfiles in `docker/` for two GPU backends and published to Quay as `quay.io/proteindj/<tool>:<version>-cuda` (NVIDIA) and `-rocm` (AMD). `python_tools` is CPU-only and has no backend suffix. Nextflow pulls them with Apptainer the first time they are needed and converts them to SIF files, so Docker is not required on your cluster.
 
 ### Choose the GPU backend
 
@@ -252,13 +252,13 @@ On a cluster that has Singularity instead of Apptainer, add `-e singularity` (an
 You do not need to build anything to use ProteinDJ. We have made changes to the source code and environments of the underlying tools, so we do not recommend substituting other containers. To change a container:
 
 1. Edit its Dockerfile in `docker/` (see the [container developer guide](dev/adding_a_new_container.md) for the layout and how to add a tool).
-2. Fork the repository and run the **Build containers** GitHub Actions workflow, which builds and smoke-tests the images and pushes them to `ghcr.io/<your-account>/proteindj`.
-3. Run ProteinDJ with `--container_registry docker://ghcr.io/<your-account>/proteindj`.
+2. Fork the repository, create a repository for each tool in your own Quay organisation, add `QUAY_USERNAME` and `QUAY_PASSWORD` secrets (a robot account with write access), and run the **Build containers** GitHub Actions workflow with `REGISTRY` in `docker/docker-bake.hcl` set to `quay.io/<your-organisation>`. It builds and smoke-tests the images and pushes them there.
+3. Run ProteinDJ with `--container_registry docker://quay.io/<your-organisation>`.
 
 **Verify the images:**
 
 ```bash
-ls -la /path/to/library    # One .img file per tool and backend, e.g. ghcr.io-hardylaboratory-proteindj-fampnn-v3.1-cuda.img
+ls -la /path/to/library    # One .img file per tool and backend, e.g. quay.io-proteindj-fampnn-v3.1-cuda.img
 # On a GPU node, check that the image can see the GPU (use --rocm for AMD)
 apptainer exec --nv --env SMOKE_GPU=1 /path/to/library/<image>.img bash /opt/smoke/smoke_test.sh
 ```
@@ -349,7 +349,7 @@ apptainer --version
 export APPTAINER_TMPDIR=/path/to/scratch
 export APPTAINER_CACHEDIR=/path/to/cache
 
-# GHCR can drop connections on multi-GB layers ("error writing layer: unexpected EOF")
+# Large layers can drop connections ("error writing layer: unexpected EOF")
 export GODEBUG=http2client=0
 ```
 
