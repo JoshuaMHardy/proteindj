@@ -25,7 +25,6 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --quiet && \
-    apt-get upgrade --yes --quiet && \
     apt-get install --no-install-recommends --yes --quiet \
         build-essential \
         ca-certificates \
@@ -58,7 +57,6 @@ RUN git clone https://github.com/JoshuaMHardy/boltzgen.git /boltzgen && \
         sed -i -E '/^\s*"(nvidia-ml-py|cuequivariance)/d' /boltzgen/pyproject.toml; \
     fi && \
     pip install /boltzgen && \
-    pip install --upgrade setuptools wheel && \
     mkdir -p /cache
 
 COPY smoke/ /opt/smoke/
