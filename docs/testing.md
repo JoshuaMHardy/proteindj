@@ -28,6 +28,19 @@ When iterating on a single module, target just that file instead of a whole tag,
 nf-test test tests/modules/bindcraft.runbc.nf.test --tag gpu --profile milton
 ```
 
+## Continuous integration
+
+[`.github/workflows/tests.yml`](../.github/workflows/tests.yml) runs on pull requests that touch pipeline code, scripts, tests or bindsweeper (and on demand via *Run workflow*). It covers everything except the GPU tests, as four independent jobs on separate runners:
+
+| Job | Runs |
+|-----|------|
+| `pytest (scripts)` | `cd scripts && pytest` in a micromamba env (CPU torch, mkdssp, openmm, pdbfixer) |
+| `pytest (bindsweeper)` | `cd bindsweeper && uv run pytest` |
+| `nf-test (unit)` | `make test-nf-unit` |
+| `nf-test (cpu modules)` | `make test-nf-cpu PROFILE=ci` with Apptainer; the `python_tools` image is cached between runs |
+
+The `ci` profile in [`tests/nextflow.config`](../tests/nextflow.config) shrinks the CPU/memory requests so processes fit on a GitHub-hosted runner. GPU tests (`make test-nf-gpu`) and `end2end_test.sh` still need to be run on the cluster.
+
 ## End-to-end pipeline testing (`end2end_test.sh`)
 
 ### Overview
