@@ -29,8 +29,9 @@ permissions:
   packages: read
 
 env:
-  NXF_VER: "24.10.5"
-  NFT_VER: "0.9.3"
+  # Nextflow 24.10 fails to compile main.nf inside nf-test function tests; keep in line with the version used locally.
+  NXF_VER: "25.10.0"
+  NFT_VER: "0.9.5"
   # Where Nextflow stores images pulled from docker:// references.
   NXF_APPTAINER_CACHEDIR: ${{ github.workspace }}/.apptainer-cache
   NXF_ANSI_LOG: "false"
@@ -53,7 +54,7 @@ jobs:
           environment-name: pdj-scripts-test
           create-args: >-
             python=3.12
-            "dssp=4.5.*"
+            dssp=4.5
             openmm
             pdbfixer
           cache-environment: true
