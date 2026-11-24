@@ -1,0 +1,105 @@
+// ModelValidator is a plain Groovy class, so (like DesignEngine.nf.test) the checks run in 'then'
+// blocks, using Utils.getPdbChainIds only as a trivial function-under-test to satisfy nf-test.
+nextflow_function {
+
+    name "Test ModelValidator launch-time model checks"
+    function "Utils.getPdbChainIds"
+
+    test("Only the model directories of the stages that will run are required") {
+        when {
+            function {
+                """
+                input[0] = "[A1-88/0]"
+                """
+            }
+        }
+        then {
+            assert function.success
+            def base = [design_mode: 'rfd_denovo', seq_method: 'mpnn', pred_method: 'boltz',
+                        mpnn_checkpoint_type: 'soluble', mpnn_checkpoint_model: 'v_48_020']
+
+            def problems = ModelValidator.missingModels(base + [rfd_models: '/nonexistent/rfd',
+                mpnn_models: '/nonexistent/mpnn', boltz_models: '/nonexistent/boltz'])
+            assert problems.size() == 3
+            assert problems.any { it.startsWith('--rfd_models') }
+
+            // Fold design skipped: rfd_models is no longer needed
+            assert ModelValidator.missingModels(base + [skip_fold: true, mpnn_models: '/nonexistent/mpnn',
+                boltz_models: '/nonexistent/boltz']).every { !it.startsWith('--rfd_models') }
+
+            // Only fold design requested: sequence design and prediction models are not needed
+            assert ModelValidator.missingModels(base + [run_fold_only: true,
+                rfd_models: '/nonexistent/rfd']).size() == 1
+
+            // Analysis only: nothing to check
+            assert ModelValidator.missingModels(base + [skip_fold_seq_pred: true]) == []
+        }
+    }
+
+    test("Reports missing files, honouring wildcards, directories and the selected checkpoint") {
+        when {
+            function {
+                """
+                input[0] = "[A1-88/0]"
+                """
+            }
+        }
+        then {
+            assert function.success
+            def root = File.createTempDir('models-', '')
+            try {
+                def rfd4 = new File(root, 'rfd4'); rfd4.mkdirs()
+                new File(rfd4, 'config.json').text = '{}'
+                def boltz = new File(root, 'boltz'); boltz.mkdirs()
+                new File(boltz, 'boltz2_conf.ckpt').text = ''
+                def af2 = new File(root, 'af2'); af2.mkdirs()
+                new File(af2, 'params_model_1_ptm.npz').text = ''
+                def mpnn = new File(root, 'mpnn/soluble_model_weights'); mpnn.mkdirs()
+                new File(mpnn, 'v_48_010.pt').text = ''
+
+                def rfd4Params = [design_mode: 'rfd4_denovo', pred_method: 'af2', af2_models: af2.path,
+                                  rfd4_models: rfd4.path]
+                assert ModelValidator.missingModels(rfd4Params) ==
+                    ["--rfd4_models: ${rfd4} does not contain model.safetensors".toString()]
+                new File(rfd4, 'model.safetensors').text = ''
+                assert ModelValidator.missingModels(rfd4Params) == []
+
+                // boltz needs the mols/ directory as well as the checkpoint
+                def boltzParams = [skip_fold: true, seq_method: 'fampnn', pred_method: 'boltz', boltz_models: boltz.path]
+                assert ModelValidator.missingModels(boltzParams)[0].contains('mols/')
+                new File(boltz, 'mols').mkdirs()
+                assert ModelValidator.missingModels(boltzParams) == []
+
+                // ProteinMPNN is checked for the selected checkpoint only
+                def mpnnParams = [skip_fold: true, seq_method: 'mpnn', skip_fold_seq: false, pred_method: 'af2',
+                                  af2_models: af2.path, mpnn_models: new File(root, 'mpnn').path,
+                                  mpnn_checkpoint_type: 'soluble', mpnn_checkpoint_model: 'v_48_020']
+                assert ModelValidator.missingModels(mpnnParams)[0].contains('soluble_model_weights/v_48_020.pt')
+                assert ModelValidator.missingModels(mpnnParams + [mpnn_checkpoint_model: 'v_48_010']) == []
+            } finally {
+                root.deleteDir()
+            }
+        }
+    }
+
+    test("validate throws one error naming every problem") {
+        when {
+            function {
+                """
+                input[0] = "[A1-88/0]"
+                """
+            }
+        }
+        then {
+            assert function.success
+            def threw = false
+            try {
+                ModelValidator.validate([design_mode: 'boltzgen_denovo', seq_method: 'fampnn', pred_method: 'af2_boltz',
+                    bg_models: '/nonexistent/bg', af2_models: '/nonexistent/af2', boltz_models: '/nonexistent/boltz'])
+            } catch (IllegalArgumentException e) {
+                threw = ['--bg_models', '--af2_models', '--boltz_models', 'download_models.sh'].every { e.message.contains(it) }
+            }
+            assert threw
+        }
+    }
+}

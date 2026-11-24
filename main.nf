@@ -98,6 +98,9 @@ workflow {
         error("--rank_designs cannot be used with --skip_fold_seq_pred since no prediction metrics are generated to rank on.")
     }
 
+    // Fail fast if the model directories needed by the stages that will run are missing
+    ModelValidator.validate(params)
+
     // Validate ranking metric matches prediction method
     def ranking_metric = null
     if (params.rank_designs && params.ranking_metric) {

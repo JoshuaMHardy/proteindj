@@ -21,16 +21,6 @@ class RFD4Engine extends DesignEngine {
         if (!inferenceBatch?.isInteger() || inferenceBatch.toInteger() < 1) {
             throw new IllegalArgumentException('rfd4_inference_batch_size must be a positive integer')
         }
-        if (!params.rfd4_models) {
-            throw new IllegalArgumentException('rfd4_models is required')
-        }
-        def models = new File(params.rfd4_models.toString())
-        if (!models.isAbsolute() || !models.isDirectory()) {
-            throw new IllegalArgumentException('rfd4_models must be an existing absolute directory')
-        }
-        if (!new File(models, 'config.json').isFile() || !new File(models, 'model.safetensors').isFile()) {
-            throw new IllegalArgumentException('rfd4_models must contain config.json and model.safetensors')
-        }
     }
 
     List<String> startupMessages() {

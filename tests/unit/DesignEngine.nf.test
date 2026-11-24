@@ -76,24 +76,16 @@ nextflow_function {
         }
         then {
             assert function.success
-            def models = File.createTempDir('rfd4-models-', '')
-            new File(models, 'config.json').text = '{}'
-            new File(models, 'model.safetensors').text = ''
             def base = [design_mode: 'rfd4_denovo', design_length: '60-100',
-                        input_pdb: 'target.pdb', seqs_per_design: 1,
-                        rfd4_models: models.absolutePath]
+                        input_pdb: 'target.pdb', seqs_per_design: 1]
+            new RFD4Engine(base + [rfd4_inference_batch_size: 4], true).validateParams()
+            def threw = false
             try {
-                new RFD4Engine(base + [rfd4_inference_batch_size: 4], true).validateParams()
-                def threw = false
-                try {
-                    new RFD4Engine(base + [rfd4_inference_batch_size: 0], true).validateParams()
-                } catch (IllegalArgumentException e) {
-                    threw = true
-                }
-                assert threw
-            } finally {
-                models.deleteDir()
+                new RFD4Engine(base + [rfd4_inference_batch_size: 0], true).validateParams()
+            } catch (IllegalArgumentException e) {
+                threw = true
             }
+            assert threw
         }
     }
 
