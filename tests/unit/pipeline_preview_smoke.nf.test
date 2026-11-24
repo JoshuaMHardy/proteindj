@@ -5,6 +5,7 @@ nextflow_pipeline {
 
     name "Test pipeline -preview across all design_mode/monomer-binder combinations"
     script "main.nf"
+    config "./dummy_models.config"
     options "-preview"
 
     test("rfd_denovo monomer") {
