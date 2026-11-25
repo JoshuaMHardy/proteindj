@@ -220,7 +220,7 @@ ls -la models/mpnn/hyper_model_weights/    # Should contain 4 .pt files
 
 ## Step 4: Containers
 
-ProteinDJ runs each tool in its own container. The images are built by GitHub Actions from the Dockerfiles in `docker/` for two GPU backends and published to Quay as `quay.io/proteindj/<tool>:<version>-cuda` (NVIDIA) and `-rocm` (AMD). `python_tools` is CPU-only and has no backend suffix. Nextflow pulls them with Apptainer the first time they are needed and converts them to SIF files, so Docker is not required on your cluster.
+ProteinDJ runs each tool in its own container. The containers are built by GitHub Actions from the Dockerfiles in `docker/` for two GPU backends, converted to Apptainer SIF files and published to Quay as `quay.io/proteindj/<tool>:<version>-cuda` (NVIDIA) and `-rocm` (AMD). `python_tools` is CPU-only and has no backend suffix. Nextflow downloads them with Apptainer (`oras://`) the first time they are needed. No Docker or image conversion is required on your cluster. The SIF files also run with Singularity CE.
 
 ### Choose the GPU backend
 
@@ -228,32 +228,32 @@ Set `gpu_backend` in `nextflow.config` (or pass `--gpu_backend rocm`). The defau
 
 ### Where the images are stored
 
-Nextflow looks for an image in `apptainer.libraryDir` (a read-only, admin-managed directory) and then in `apptainer.cacheDir` (writable); anything it has to pull is converted and saved to the cache. Set both in your cluster profile (see `cluster_specific_configs/milton.config` for an example). Without them, images are stored under `work/apptainer` and every new work directory pulls them again.
+Nextflow looks for an image in `apptainer.libraryDir` (a read-only, admin-managed directory) and then in `apptainer.cacheDir` (writable); anything it has to download is saved to the cache. Set both in your cluster profile (see `cluster_specific_configs/milton.config` for an example). Without them, images are stored under `work/apptainer` and every new work directory downloads them again.
 
-The images are large (several GB each), and converting one needs about 20 GB of temporary space. Point `APPTAINER_TMPDIR` and `APPTAINER_CACHEDIR` at a disk directory with plenty of free space, and raise `apptainer.pullTimeout` if pulls time out.
+The SIF files are large (several GB each). Point `APPTAINER_CACHEDIR` at a directory with plenty of free space, and raise `apptainer.pullTimeout` if downloads time out.
 
 ### Option A: Let Nextflow pull the images
 
-Create a profile with a shared, group-writable `apptainer.cacheDir`. The first run converts each image and later runs, by any user, reuse it. This is the simplest option but the first user waits for the conversions.
+Create a profile with a shared, group-writable `apptainer.cacheDir`. The first run downloads each SIF and later runs, by any user, reuse it.
 
 ### Option B: Pre-populate a shared library (recommended for shared clusters)
 
-An administrator can pull every image once so that users never convert anything. The script reads the version and registry from `nextflow.config` and the tool list from `docker/docker-bake.hcl`, saves each image under the file name Nextflow expects, and skips images that already exist:
+An administrator can download every SIF once so that users never wait for a download. The script reads the version and registry from `nextflow.config` and the tool list from `docker/docker-bake.hcl`, saves each SIF under the file name Nextflow expects, and skips images that already exist:
 
 ```bash
 module load apptainer
-scripts/pull_containers.sh -l /path/to/library -T -t /path/to/scratch
+scripts/pull_containers.sh -l /path/to/library -T
 ```
 
-On a cluster that has Singularity instead of Apptainer, add `-e singularity` (and set `singularity.libraryDir` rather than `apptainer.libraryDir`). Use `-b "cuda rocm"` to pull both backends, `-n` for a dry run and `-f` to re-pull existing images. Run it on a compute node, for example with `sbatch --cpus-per-task 16 --mem 96G --time 6:00:00 --wrap '...'`, as the conversions need a lot of memory. If you use `/dev/shm` for scratch, the job's memory limit must cover it. Set `apptainer.libraryDir` to the same directory in your profile, and run the script again after each ProteinDJ release.
+On a cluster that has Singularity instead of Apptainer, add `-e singularity` (and set `singularity.libraryDir` rather than `apptainer.libraryDir`). Use `-b "cuda rocm"` to pull both backends, `-n` for a dry run and `-f` to re-pull existing images. Set `apptainer.libraryDir` to the same directory in your profile, and run the script again after each ProteinDJ release.
 
 ### Building or modifying containers
 
 You do not need to build anything to use ProteinDJ. We have made changes to the source code and environments of the underlying tools, so we do not recommend substituting other containers. To change a container:
 
 1. Edit its Dockerfile in `docker/` (see the [container developer guide](dev/adding_a_new_container.md) for the layout and how to add a tool).
-2. Fork the repository, create a repository for each tool in your own Quay organisation, add `QUAY_USERNAME` and `QUAY_PASSWORD` secrets (a robot account with write access), and run the **Build containers** GitHub Actions workflow with `REGISTRY` in `docker/docker-bake.hcl` set to `quay.io/<your-organisation>`. It builds and smoke-tests the images and pushes them there.
-3. Run ProteinDJ with `--container_registry docker://quay.io/<your-organisation>`.
+2. Fork the repository, create a repository for each tool in your own Quay organisation, add `QUAY_USERNAME` and `QUAY_PASSWORD` secrets (a robot account with write access), and run the **Build containers** GitHub Actions workflow with `REGISTRY` in `docker/docker-bake.hcl` set to `quay.io/<your-organisation>`. It builds each image, converts it to a SIF, smoke-tests it and pushes the SIF there.
+3. Run ProteinDJ with `--container_registry oras://quay.io/<your-organisation>`.
 
 **Verify the images:**
 
@@ -336,24 +336,21 @@ For thorough validation, we have made an end-to-end testing script that performs
 
 ### Common Issues
 
-**Container pull or conversion failures:**
+**Container download failures:**
 
 ```bash
-# Check available space (conversion needs ~20 GB of temporary space per image)
+# Check available space (each SIF is several GB)
 df -h
 
 # Check Apptainer version
 apptainer --version
 
-# Use disk scratch and cache directories with plenty of free space
-export APPTAINER_TMPDIR=/path/to/scratch
+# Use a cache directory with plenty of free space
 export APPTAINER_CACHEDIR=/path/to/cache
 
-# Large layers can drop connections ("error writing layer: unexpected EOF")
+# Large downloads can drop connections ("unexpected EOF")
 export GODEBUG=http2client=0
 ```
-
-`mksquashfs ... signal: killed` means the job ran out of memory, including any RAM-backed scratch such as `/dev/shm`.
 
 **Configuration issues:**
 

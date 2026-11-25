@@ -32,7 +32,7 @@ env:
   # Nextflow 24.10 fails to compile main.nf inside nf-test function tests; keep in line with the version used locally.
   NXF_VER: "25.10.0"
   NFT_VER: "0.9.5"
-  # Where Nextflow stores images pulled from docker:// references.
+  # Where Nextflow stores SIFs pulled from oras:// references.
   NXF_APPTAINER_CACHEDIR: ${{ github.workspace }}/.apptainer-cache
   NXF_ANSI_LOG: "false"
 

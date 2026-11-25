@@ -1,14 +1,13 @@
 #!/bin/bash
 # Pre-pull the ProteinDJ containers into an Apptainer or Singularity library directory
-# (apptainer.libraryDir / singularity.libraryDir), so users never pull or convert images themselves.
+# (apptainer.libraryDir / singularity.libraryDir), so users never wait for a download.
 #
 # Nextflow looks for <image reference with '/' and ':' replaced by '-'>.img in the library
 # directory, for example
-#   docker://quay.io/proteindj/fampnn:v3.1-rocm
+#   oras://quay.io/proteindj/fampnn:v3.1-rocm
 #   -> quay.io-proteindj-fampnn-v3.1-rocm.img
 #
-# Run it as the account that owns the library, ideally on a compute node: converting the large
-# GPU images needs plenty of RAM and temporary disk.
+# The images are published as ready-made SIF files, so a pull is a plain download.
 set -euo pipefail
 
 usage() {
@@ -22,7 +21,7 @@ Usage: pull_containers.sh -l LIBRARY_DIR [options]
   -v VERSION    Container version, e.g. v3.1 (default: container_version in nextflow.config)
   -r REGISTRY   Registry path without a scheme (default: container_registry in nextflow.config)
   -b BACKENDS   Space-separated GPU backends to pull (default: "cuda", option for "rocm")
-  -t DIR        Scratch directory for image conversion
+  -t DIR        Scratch directory for downloads
                 (default: $APPTAINER_TMPDIR or $SINGULARITY_TMPDIR, then $TMPDIR or /tmp)
   -a N          Attempts per image before giving up (default: 3)
   -T            Smoke-test each image after pulling it (CPU only)
@@ -31,7 +30,7 @@ Usage: pull_containers.sh -l LIBRARY_DIR [options]
   -h            Show this help
 
 Private repositories need credentials first, either
-  apptainer remote login --username USER docker://quay.io     (or: singularity remote login ...)
+  apptainer remote login --username USER oras://quay.io        (or: singularity remote login ...)
 or APPTAINER_DOCKER_USERNAME and APPTAINER_DOCKER_PASSWORD (SINGULARITY_DOCKER_USERNAME and
 SINGULARITY_DOCKER_PASSWORD for Singularity), using a read-only robot account or token.
 EOF
@@ -109,10 +108,10 @@ registry="${registry#*://}"
 gpu_tools="$(sed -n 's/.*tool[[:space:]]*=[[:space:]]*\[\(.*\)\].*/\1/p' "${bake}" | tr -d '" ')"
 [[ -n "${gpu_tools}" ]] || { echo "Error: could not read the tool list from ${bake}" >&2; exit 2; }
 
-uris=("docker://${registry}/python_tools:${version}")
+uris=("oras://${registry}/python_tools:${version}")
 for tool in ${gpu_tools//,/ }; do
     for backend in ${backends}; do
-        uris+=("docker://${registry}/${tool}:${version}-${backend}")
+        uris+=("oras://${registry}/${tool}:${version}-${backend}")
     done
 done
 
@@ -165,7 +164,7 @@ for uri in "${uris[@]}"; do
     # Pull next to the destination and rename, so a running pipeline never sees a partial file.
     tmp_file="$(mktemp "${library}/.pull.XXXXXX")"
     if pull_with_retry "${tmp_file}" "${uri}" \
-        && { [[ "${smoke}" == 0 || "${uri}" == oras://* ]] || "${engine}" exec "${tmp_file}" bash /opt/smoke/smoke_test.sh; }; then
+        && { [[ "${smoke}" == 0 ]] || "${engine}" exec "${tmp_file}" bash /opt/smoke/smoke_test.sh; }; then
         chmod 644 "${tmp_file}"
         mv -f "${tmp_file}" "${dest}"
         pulled=$((pulled + 1))

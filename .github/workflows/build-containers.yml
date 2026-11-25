@@ -12,10 +12,6 @@ on:
       targets:
         description: 'Comma-separated bake targets (e.g. fampnn-rocm,boltz2-cuda) or "all"'
         default: all
-      publish_sif:
-        description: 'Also publish each image as an Apptainer SIF (tag suffix -sif)'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -74,52 +70,51 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      # The registry cache avoids the 10 GB GitHub Actions cache limit.
-      - name: Build and push ${{ matrix.target }}
+      # Only the SIF is published; the image is an intermediate OCI archive. The registry cache
+      # avoids the 10 GB GitHub Actions cache limit.
+      - name: Build ${{ matrix.target }}
         uses: docker/bake-action@v5
         with:
           workdir: docker
           targets: ${{ matrix.target }}
-          push: true
           set: |
+            *.output=type=oci,dest=${{ runner.temp }}/image.tar
             *.cache-from=type=registry,ref=${{ matrix.cache }}
             *.cache-to=type=registry,ref=${{ matrix.cache }},mode=max,image-manifest=true,oci-mediatypes=true
 
-      - name: Free space before testing
+      - name: Free space before converting
         run: |
           docker buildx prune --all --force
           docker system prune --all --force --volumes
           df -h /
 
-      # CPU-only import and --help checks; GPU runs are tested on the cluster.
-      - name: Smoke test ${{ matrix.image }}
-        run: |
-          docker pull "${{ matrix.image }}"
-          docker run --rm "${{ matrix.image }}" bash /opt/smoke/smoke_test.sh
-
-      - name: Free space before publishing the SIF
-        if: inputs.publish_sif
-        run: |
-          docker system prune --all --force --volumes
-          df -h /
-
       - name: Install Apptainer
-        if: inputs.publish_sif
         run: |
           sudo add-apt-repository -y ppa:apptainer/ppa
           sudo apt-get update --quiet
           sudo apt-get install --yes --quiet apptainer
+          # Ubuntu 24.04 blocks the unprivileged user namespaces that rootless Apptainer needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      # A SIF shares the repository and version with its image, with a -sif tag suffix, as Quay
-      # repositories are flat. Cluster users can then download one file and skip the conversion.
-      - name: Publish SIF for ${{ matrix.image }}
-        if: inputs.publish_sif
+      - name: Convert ${{ matrix.image }} to SIF
         env:
-          APPTAINER_DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          APPTAINER_DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
           APPTAINER_TMPDIR: ${{ runner.temp }}
-          APPTAINER_CACHEDIR: ${{ runner.temp }}/apptainer-cache
+          APPTAINER_DISABLE_CACHE: "true"
         run: |
-          apptainer pull "${RUNNER_TEMP}/image.sif" "docker://${{ matrix.image }}"
-          apptainer push --docker-username "${APPTAINER_DOCKER_USERNAME}" --docker-password "${APPTAINER_DOCKER_PASSWORD}" \
-              "${RUNNER_TEMP}/image.sif" "oras://${{ matrix.image }}-sif"
+          apptainer build "${RUNNER_TEMP}/image.sif" "oci-archive:${RUNNER_TEMP}/image.tar"
+          rm -f "${RUNNER_TEMP}/image.tar"
+          ls -lh "${RUNNER_TEMP}/image.sif"
+          df -h /
+
+      # CPU-only import and --help checks; GPU runs are tested on the cluster.
+      - name: Smoke test ${{ matrix.image }}
+        run: apptainer exec "${RUNNER_TEMP}/image.sif" bash /opt/smoke/smoke_test.sh
+
+      # The SIF takes the image's tag, so the pipeline pulls it with oras://.
+      - name: Publish ${{ matrix.image }}
+        env:
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+        run: |
+          apptainer push --docker-username "${QUAY_USERNAME}" --docker-password "${QUAY_PASSWORD}" \
+              "${RUNNER_TEMP}/image.sif" "oras://${{ matrix.image }}"

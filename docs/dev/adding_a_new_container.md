@@ -1,7 +1,8 @@
 # Container Build Workflow
 
-ProteinDJ's containers are Docker images built by GitHub Actions for two GPU backends (CUDA and
-ROCm) and pulled on the cluster with Apptainer. This document describes the setup and how to add
+ProteinDJ's containers are built from Dockerfiles by GitHub Actions for two GPU backends (CUDA and
+ROCm), converted to Apptainer SIF files and published to Quay. The cluster downloads the SIFs with
+Apptainer (`oras://`) and never converts them. This document describes the setup and how to add
 a container.
 
 ---
@@ -24,9 +25,9 @@ graph LR
 | `docker/docker-bake.hcl` | Single source of truth for tags, build args and the list of tools. |
 | `docker/Dockerfile.template.dockerfile` | Scaffold for a new tool. Not built. |
 | `.github/scripts/bake_matrix.py` | Reads `docker buildx bake --print` and selects the targets to build. |
-| `.github/workflows/build-containers.yml` | Plans the matrix, builds and pushes each target, then smoke-tests it. |
+| `.github/workflows/build-containers.yml` | Plans the matrix, builds each target, converts it to a SIF, smoke-tests the SIF and pushes it. |
 
-Images are tagged `quay.io/proteindj/<tool>:<VERSION>-cuda|rocm`. `python_tools`
+SIFs are tagged `quay.io/proteindj/<tool>:<VERSION>-cuda|rocm`. `python_tools`
 is CPU-only and has no backend suffix. `VERSION` is a variable in `docker-bake.hcl` and is kept in
 sync with `params.container_version` by `scripts/bump_version.py`. The tag is floating: a rebuild
 without a version bump overwrites it.
@@ -88,16 +89,16 @@ No Docker is needed on the cluster, so the workflow is the only build path.
 
 ## 4. Testing on the cluster
 
-CI runs the smoke test on CPU only. Pull the image and repeat it with a GPU:
+CI runs the smoke test on CPU only. Download the SIF and repeat it with a GPU:
 
 ```bash
-apptainer pull fampnn_v3.1-rocm.sif docker://quay.io/proteindj/fampnn:v3.1-rocm
+apptainer pull fampnn_v3.1-rocm.sif oras://quay.io/proteindj/fampnn:v3.1-rocm
 apptainer exec --rocm --env SMOKE_GPU=1 fampnn_v3.1-rocm.sif bash /opt/smoke/smoke_test.sh
 ```
 
 Use `--nv` for CUDA images. `SMOKE_GPU=1` additionally requires torch and jax to see a device.
 Packages are private by default; authenticate with
-`apptainer remote login --username <user> docker://quay.io` or make them public.
+`apptainer remote login --username <user> oras://quay.io` or make them public.
 
 Run the pipeline with `--gpu_backend rocm` to select the ROCm images.
 
@@ -106,7 +107,7 @@ Run the pipeline with `--gpu_backend rocm` to select the ROCm images.
 Nextflow resolves a container first in `apptainer.libraryDir` (read-only), then in
 `apptainer.cacheDir`. The file name is the image reference with `/` and `:` replaced by `-` plus
 `.img`, for example `quay.io-proteindj-fampnn-v3.1-rocm.img`. An administrator can
-pre-pull each release into the library directory so users never convert images, using
+pre-download each release into the library directory so users never wait, using
 `scripts/pull_containers.sh`:
 
 ```bash
@@ -115,5 +116,5 @@ scripts/pull_containers.sh -l /vast/projects/alphafold/databases/predictedDb/con
 
 It reads the version and registry from `nextflow.config` and the tool list from
 `docker/docker-bake.hcl`, skips images that already exist (`-f` re-pulls), and renames each image
-into place only after it has pulled and passed the smoke test (`-T`). Use `-n` for a dry run and
-`-b rocm` to limit the backends. Run it on a compute node with a large `-t` scratch directory.
+into place only after it has downloaded and passed the smoke test (`-T`). Use `-n` for a dry run and
+`-b rocm` to limit the backends.
