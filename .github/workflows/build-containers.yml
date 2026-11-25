@@ -12,6 +12,10 @@ on:
       targets:
         description: 'Comma-separated bake targets (e.g. fampnn-rocm,boltz2-cuda) or "all"'
         default: all
+      publish_sif:
+        description: 'Also publish each image as an Apptainer SIF (tag suffix -sif)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -92,3 +96,30 @@ jobs:
         run: |
           docker pull "${{ matrix.image }}"
           docker run --rm "${{ matrix.image }}" bash /opt/smoke/smoke_test.sh
+
+      - name: Free space before publishing the SIF
+        if: inputs.publish_sif
+        run: |
+          docker system prune --all --force --volumes
+          df -h /
+
+      - name: Install Apptainer
+        if: inputs.publish_sif
+        run: |
+          sudo add-apt-repository -y ppa:apptainer/ppa
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --quiet apptainer
+
+      # A SIF shares the repository and version with its image, with a -sif tag suffix, as Quay
+      # repositories are flat. Cluster users can then download one file and skip the conversion.
+      - name: Publish SIF for ${{ matrix.image }}
+        if: inputs.publish_sif
+        env:
+          APPTAINER_DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          APPTAINER_DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+          APPTAINER_TMPDIR: ${{ runner.temp }}
+          APPTAINER_CACHEDIR: ${{ runner.temp }}/apptainer-cache
+        run: |
+          apptainer pull "${RUNNER_TEMP}/image.sif" "docker://${{ matrix.image }}"
+          apptainer push --docker-username "${APPTAINER_DOCKER_USERNAME}" --docker-password "${APPTAINER_DOCKER_PASSWORD}" \
+              "${RUNNER_TEMP}/image.sif" "oras://${{ matrix.image }}-sif"

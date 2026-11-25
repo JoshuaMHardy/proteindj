@@ -127,8 +127,6 @@ umask 022
 if [[ "${dry_run}" == 0 ]]; then
     mkdir -p "${library}" "${scratch}"
     export "${tmpdir_var}=${scratch}"
-    # Registries can drop HTTP/2 streams on multi-GB layers ("error writing layer: unexpected EOF").
-    export GODEBUG="${GODEBUG:-http2client=0}"
 fi
 
 pull_with_retry() {
